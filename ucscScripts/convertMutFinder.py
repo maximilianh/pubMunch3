@@ -13,7 +13,7 @@ for line in open("regex.txt"):
     if line.startswith("#"):
         desc = " ".join(line.split()[1:])
         continue
-    for fromRepl, toRepl in replDict.iteritems():
+    for fromRepl, toRepl in replDict.items():
         line = line.replace(fromRepl, toRepl)
     row = ["prot", "sub", "MF_"+desc, line]
-    print "\t".join(row)
+    print("\t".join(row))

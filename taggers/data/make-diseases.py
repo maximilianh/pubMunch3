@@ -59,4 +59,4 @@ lowTerms.remove("isolated")
 for term in lowTerms:
     term = term.strip()
     ofh.write(term+"\n")
-print "wrote %d terms to to %s" % (len(terms), ofh.name)
+print("wrote %d terms to to %s" % (len(terms), ofh.name))

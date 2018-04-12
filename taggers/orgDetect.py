@@ -10,7 +10,7 @@ class OrgDetect:
 
     def annotRows(self, text):
         """ interface for pubRun to get annotation lines for text """
-        for genome, keywords in speciesNames.iteritems():
+        for genome, keywords in speciesNames.items():
             for keyword in keywords:
                 start = text.find(keyword)
                 if start==-1:

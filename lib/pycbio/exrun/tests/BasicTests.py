@@ -43,7 +43,7 @@ class TouchRule(Rule):
 
     def _touch(self, fp):
         "create a file product"
-        self.tester.failUnless(isinstance(fp, File))
+        self.tester.assertTrue(isinstance(fp, File))
         ext = os.path.splitext(fp.path)[1]
         fileOps.ensureFileDir(fp.getOutPath())
         fh = open(fp.getOutPath(), "w")
@@ -74,14 +74,14 @@ class TouchTests(ExRunTestCaseBase):
         er.addRule(rule)
         # use default target
         er.run()
-        self.failUnlessEqual(rule.touchCnt, 3)
+        self.assertEqual(rule.touchCnt, 3)
         pset.check()
         self.checkGraphStates(er)
 
         # try again, nothing should be made this time
         rule.touchCnt = 0
         er.run()
-        self.failUnlessEqual(rule.touchCnt, 0)
+        self.assertEqual(rule.touchCnt, 0)
         pset.check()
         self.checkGraphStates(er)
 
@@ -128,11 +128,11 @@ class TouchTests(ExRunTestCaseBase):
         tl = self.twoLevelSetup(er)
         er.obtainDefaultTarget(tl.topPset.prods)
         er.run()
-        self.failUnlessEqual(tl.low1Rule.touchCnt, 3)
+        self.assertEqual(tl.low1Rule.touchCnt, 3)
         tl.low1Pset.check()
-        self.failUnlessEqual(tl.low2Rule.touchCnt, 3)
+        self.assertEqual(tl.low2Rule.touchCnt, 3)
         tl.low2Pset.check()
-        self.failUnlessEqual(tl.topRule.touchCnt, 3)
+        self.assertEqual(tl.topRule.touchCnt, 3)
         tl.topPset.check()
         self.checkGraphStates(er)
 
@@ -141,10 +141,10 @@ class TouchTests(ExRunTestCaseBase):
         er = ExRun(verbFlags=verbFlags)
         tl = self.twoLevelSetup(er, makeTargets=True)
         er.run(targets=tl.low1Tar)
-        self.failUnlessEqual(tl.low1Rule.touchCnt, 3)
+        self.assertEqual(tl.low1Rule.touchCnt, 3)
         tl.low1Pset.check()
-        self.failUnlessEqual(tl.low2Rule.touchCnt, 0)
-        self.failUnlessEqual(tl.topRule.touchCnt, 0)
+        self.assertEqual(tl.low2Rule.touchCnt, 0)
+        self.assertEqual(tl.topRule.touchCnt, 0)
         self.checkGraphStates(er,
                               ((tl.low2Pset.prods, ProdState.outdated),
                                (tl.low2Rule,       RuleState.outdated),
@@ -156,11 +156,11 @@ class TouchTests(ExRunTestCaseBase):
         er = ExRun(verbFlags=verbFlags)
         tl = self.twoLevelSetup(er, makeTargets=True)
         er.run(targets=[tl.low1Tar, tl.low2Tar.name])
-        self.failUnlessEqual(tl.low1Rule.touchCnt, 3)
+        self.assertEqual(tl.low1Rule.touchCnt, 3)
         tl.low1Pset.check()
-        self.failUnlessEqual(tl.low2Rule.touchCnt, 3)
+        self.assertEqual(tl.low2Rule.touchCnt, 3)
         tl.low2Pset.check()
-        self.failUnlessEqual(tl.topRule.touchCnt, 0)
+        self.assertEqual(tl.topRule.touchCnt, 0)
         self.checkGraphStates(er,
                               ((tl.topPset.prods, ProdState.outdated),
                                (tl.topRule,       RuleState.outdated)))
@@ -170,11 +170,11 @@ class TouchTests(ExRunTestCaseBase):
         er = ExRun(verbFlags=verbFlags)
         tl = self.twoLevelSetup(er, makeTargets=True)
         er.run(targets=tl.topTar.name)
-        self.failUnlessEqual(tl.low1Rule.touchCnt, 3)
+        self.assertEqual(tl.low1Rule.touchCnt, 3)
         tl.low1Pset.check()
-        self.failUnlessEqual(tl.low2Rule.touchCnt, 3)
+        self.assertEqual(tl.low2Rule.touchCnt, 3)
         tl.low2Pset.check()
-        self.failUnlessEqual(tl.topRule.touchCnt, 3)
+        self.assertEqual(tl.topRule.touchCnt, 3)
         tl.topPset.check()
         self.checkGraphStates(er)
 

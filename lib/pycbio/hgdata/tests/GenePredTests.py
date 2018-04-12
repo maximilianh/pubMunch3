@@ -67,45 +67,45 @@ def featureExpectedSwap(expected, chromSize):
 class ReadTests(TestCaseBase):
     def chkFeatures(self, gene, expect):
         feats = gene.getFeatures()
-        self.failUnlessEqual(len(feats), len(expect))
-        for i in xrange(len(feats)):
-            self.failUnless(featureEq(feats[i], expect[i]))
+        self.assertEqual(len(feats), len(expect))
+        for i in range(len(feats)):
+            self.assertTrue(featureEq(feats[i], expect[i]))
         
     def testLoadMin(self):
         gpTbl = GenePredTbl(self.getInputFile("fromPslMinTest.gp"))
-        self.failUnlessEqual(len(gpTbl), 9)
+        self.assertEqual(len(gpTbl), 9)
         r = gpTbl[0]
-        self.failUnlessEqual(len(r.exons), 10)
-        self.failUnlessEqual(r.name, "NM_000017.1")
-        self.failUnlessEqual(r.exons[9].start, 119589051)
-        self.failUnless(not r.hasExonFrames)
+        self.assertEqual(len(r.exons), 10)
+        self.assertEqual(r.name, "NM_000017.1")
+        self.assertEqual(r.exons[9].start, 119589051)
+        self.assertTrue(not r.hasExonFrames)
 
         # positive strand features
         self.chkFeatures(r, featsNM_000017)
 
         # negative strand features
         r = gpTbl[1]
-        self.failUnlessEqual(r.name, "NM_000066.1")
+        self.assertEqual(r.name, "NM_000066.1")
         self.chkFeatures(r, featsNM_000066)
 
     def testLoadFrameStat(self):
         gpTbl = GenePredTbl(self.getInputFile("fileFrameStatTest.gp"))
-        self.failUnlessEqual(len(gpTbl), 5)
+        self.assertEqual(len(gpTbl), 5)
         r = gpTbl[0]
-        self.failUnlessEqual(len(r.exons), 10)
-        self.failUnlessEqual(r.name, "NM_000017.1")
-        self.failUnlessEqual(r.exons[9].start, 119589051)
-        self.failUnless(r.hasExonFrames)
+        self.assertEqual(len(r.exons), 10)
+        self.assertEqual(r.name, "NM_000017.1")
+        self.assertEqual(r.exons[9].start, 119589051)
+        self.assertTrue(r.hasExonFrames)
 
     def testStrandRelative(self):
         gpTbl = GenePredTbl(self.getInputFile("fromPslMinTest.gp"))
-        self.failUnlessEqual(len(gpTbl), 9)
+        self.assertEqual(len(gpTbl), 9)
         r = gpTbl[0]
         r = r.getStrandRelative(chromSizes[r.chrom])
-        self.failUnless(r.strandRel)
-        self.failUnlessEqual(len(r.exons), 10)
-        self.failUnlessEqual(r.name, "NM_000017.1")
-        self.failUnless(not r.hasExonFrames)
+        self.assertTrue(r.strandRel)
+        self.assertEqual(len(r.exons), 10)
+        self.assertEqual(r.name, "NM_000017.1")
+        self.assertTrue(not r.hasExonFrames)
 
         # positive strand features
         self.chkFeatures(r, featsNM_000017)
@@ -113,8 +113,8 @@ class ReadTests(TestCaseBase):
         # negative strand features
         r = gpTbl[1]
         r = r.getStrandRelative(chromSizes[r.chrom])
-        self.failUnless(r.strandRel)
-        self.failUnlessEqual(r.name, "NM_000066.1")
+        self.assertTrue(r.strandRel)
+        self.assertEqual(r.name, "NM_000066.1")
 
         self.chkFeatures(r,  featureExpectedSwap(featsNM_000066, chromSizes[r.chrom]))
 

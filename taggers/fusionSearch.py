@@ -107,11 +107,11 @@ def startup(paramDict):
             symToOffSym[syn].add(symbol)
             addStem(stemToOffSym, syn, symbol)
 
-    for sym, ids in hugoDict.iteritems():
+    for sym, ids in hugoDict.items():
         assert(len(ids)!=0)
 
 def findMatches(reDict, text):
-    for reType, reObj in reDict.iteritems():
+    for reType, reObj in reDict.items():
         for match in reObj.finditer(text):
             yield reType, match
 
@@ -145,7 +145,7 @@ def matchesAny(string, reList):
 def removeGreek(string):
     " replace greek letters with latin letters "
     greekTable = {"alpha" : "a", "beta":"b", "gamma":"g", "delta":"d"}
-    for greek, latin in greekTable.iteritems():
+    for greek, latin in greekTable.items():
         if greek in string:
             string = string.replace(greek, latin)
     return string
@@ -293,7 +293,7 @@ def annotateFile(article, file):
 
     """
     # for debugging
-    if isinstance(file, basestring):
+    if isinstance(file, str):
         text = file
     else:
         text = file.content

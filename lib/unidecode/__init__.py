@@ -7,7 +7,7 @@ NULLMAP = [ '' * 0x100 ]
 def unidecode(string):
 	"""Transliterate an Unicode object into an ASCII string
 
-	>>> unidecode(u"\u5317\u4EB0")
+	>>> unidecode(u"\\u5317\\u4EB0")
 	"Bei Jing "
 	"""
 

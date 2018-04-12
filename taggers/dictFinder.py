@@ -65,7 +65,7 @@ def annotateFile(article, file):
         found = True
         posList = []
         allMatches = []
-        for lexName, lex in lexes.iteritems():
+        for lexName, lex in lexes.items():
             matches = []
             lexMatches = fastFind(sent, lex, toLower=toLower)
             if len(lexMatches)==0 or len(lexMatches)>10:

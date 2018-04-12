@@ -58,30 +58,30 @@ class TargetToQueryTests(TestCaseBase):
         #print repr(got)
         pslNegMrna = pslNegMrna.reverseComplement()
         got = mapper.queryToTargetMap(pslNegMrna, 0, 100)
-        print repr(got)
+        print(repr(got))
         assert(False)
-        self.failUnlessEqual(got, (('blk', 'NM_017651', 135818901, 135818902, 510, 0, 1),))
+        self.assertEqual(got, (('blk', 'NM_017651', 135818901, 135818902, 510, 0, 1),))
         # end MAX MOD
 
         pslPosMrna = splitToPsl(_psPosMRna)
         # within a single block
         got = mapper.targetToQueryMap(pslPosMrna, 1024444, 1024445)
-        self.failUnlessEqual(got, (('blk', 'NM_012341', 0, 96, 97, 1024444, 1024445),))
+        self.assertEqual(got, (('blk', 'NM_012341', 0, 96, 97, 1024444, 1024445),))
         # crossing gaps
         got = mapper.targetToQueryMap(pslPosMrna, 1024398, 1031918)
-        self.failUnlessEqual(got, (('blk', 'NM_012341', 0, 50, 119, 1024398, 1024467),
+        self.assertEqual(got, (('blk', 'NM_012341', 0, 50, 119, 1024398, 1024467),
                                    ('gap', 'NM_012341', 0, 1, None, None, 1024467, 1028428),
                                    ('blk', 'NM_012341', 1, 119, 290, 1028428, 1028599),
                                    ('gap', 'NM_012341', 1, 2, None, None, 1028599, 1031868),
                                    ('blk', 'NM_012341', 2, 290, 340, 1031868, 1031918)))
         # gap before
         got = mapper.targetToQueryMap(pslPosMrna, 1024309, 1028420)
-        self.failUnlessEqual(got, (('gap', 'NM_012341', None, 0, None, None, 1024309, 1024348),
+        self.assertEqual(got, (('gap', 'NM_012341', None, 0, None, None, 1024309, 1024348),
                                    ('blk', 'NM_012341', 0, 0, 119, 1024348, 1024467),
                                    ('gap', 'NM_012341', 0, 1, None, None, 1024467, 1028420)))
         # gap after
         got = mapper.targetToQueryMap(pslPosMrna, 1051793, 1053908)
-        self.failUnlessEqual(got, (('blk', 'NM_012341', 15, 1780, 1823, 1051793, 1051836),
+        self.assertEqual(got, (('blk', 'NM_012341', 15, 1780, 1823, 1051793, 1051836),
                                    ('gap', 'NM_012341', 15, 16, None, None, 1051836, 1053014),
                                    ('blk', 'NM_012341', 16, 1823, 2517, 1053014, 1053708),
                                    ('gap', 'NM_012341', 16, None, None, None, 1053708, 1053908)))
@@ -91,9 +91,9 @@ class TargetToQueryTests(TestCaseBase):
         mapper = MapTester()
         pslPosMrna = splitToPsl(_psDoubleDel1)
         got = mapper.targetToQueryMap(pslPosMrna, 151283730, 151370810)
-        self.failUnlessEqual(got, (('blk', 'NM_017069.1-1.1', 8, 1580, 1590, 151283730, 151283740), ('gap', 'NM_017069.1-1.1', 8, 9, None, None, 151283740, 151370804), ('blk', 'NM_017069.1-1.1', 9, 1591, 1593, 151370804, 151370806), ('gap', 'NM_017069.1-1.1', 9, 10, None, None, 151370806, 151370807), ('blk', 'NM_017069.1-1.1', 10, 1593, 1596, 151370807, 151370810)))
+        self.assertEqual(got, (('blk', 'NM_017069.1-1.1', 8, 1580, 1590, 151283730, 151283740), ('gap', 'NM_017069.1-1.1', 8, 9, None, None, 151283740, 151370804), ('blk', 'NM_017069.1-1.1', 9, 1591, 1593, 151370804, 151370806), ('gap', 'NM_017069.1-1.1', 9, 10, None, None, 151370806, 151370807), ('blk', 'NM_017069.1-1.1', 10, 1593, 1596, 151370807, 151370810)))
         got = mapper.queryToTargetMap(pslPosMrna, 1408, 1784)
-        self.failUnlessEqual(got, (('blk', 'NM_017069.1-1.1', 8, 1408, 1590, 151283558, 151283740), ('gap', 'NM_017069.1-1.1', 8, 9, 1590, 1591, None, None), ('blk', 'NM_017069.1-1.1', 9, 1591, 1593, 151370804, 151370806), ('blk', 'NM_017069.1-1.1', 10, 1593, 1762, 151370807, 151370976), ('gap', 'NM_017069.1-1.1', 10, 11, 1762, 1764, None, None), ('blk', 'NM_017069.1-1.1', 11, 1764, 1784, 151370976, 151370996)))
+        self.assertEqual(got, (('blk', 'NM_017069.1-1.1', 8, 1408, 1590, 151283558, 151283740), ('gap', 'NM_017069.1-1.1', 8, 9, 1590, 1591, None, None), ('blk', 'NM_017069.1-1.1', 9, 1591, 1593, 151370804, 151370806), ('blk', 'NM_017069.1-1.1', 10, 1593, 1762, 151370807, 151370976), ('gap', 'NM_017069.1-1.1', 10, 11, 1762, 1764, None, None), ('blk', 'NM_017069.1-1.1', 11, 1764, 1784, 151370976, 151370996)))
 
 class QueryToTargetTests(TestCaseBase):
     def testPosMRna(self):
@@ -101,15 +101,15 @@ class QueryToTargetTests(TestCaseBase):
         pslPosMrna = splitToPsl(_psPosMRna)
         # within a single block
         got = mapper.queryToTargetMap(pslPosMrna, 96, 97)
-        self.failUnlessEqual(got, (('blk', 'NM_012341', 0, 96, 97, 1024444, 1024445),))
+        self.assertEqual(got, (('blk', 'NM_012341', 0, 96, 97, 1024444, 1024445),))
         # crossing gaps
         got = mapper.queryToTargetMap(pslPosMrna, 50, 340)
-        self.failUnlessEqual(got, (('blk', 'NM_012341', 0, 50, 119, 1024398, 1024467),
+        self.assertEqual(got, (('blk', 'NM_012341', 0, 50, 119, 1024398, 1024467),
                                    ('blk', 'NM_012341', 1, 119, 290, 1028428, 1028599),
                                    ('blk', 'NM_012341', 2, 290, 340, 1031868, 1031918)))
         # gap after
         got = mapper.queryToTargetMap(pslPosMrna, 1780, 2537)
-        self.failUnlessEqual(got, (('blk', 'NM_012341', 15, 1780, 1823, 1051793, 1051836),
+        self.assertEqual(got, (('blk', 'NM_012341', 15, 1780, 1823, 1051793, 1051836),
                                    ('blk', 'NM_012341', 16, 1823, 2517, 1053014, 1053708),
                                    ('gap', 'NM_012341', 16, None, 2517, 2537, None, None)))
 

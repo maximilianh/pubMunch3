@@ -74,7 +74,7 @@ class Annotate:
                 if genes!=None and len(genes)<MAXGENEPERID:
                     geneSyms = set(genes)
                     for geneSym in geneSyms:
-                        geneId, geneSym = genes.items()[0]
+                        geneId, geneSym = list(genes.items())[0]
                         row = [start, end, "gene", geneSym, markerType, markerId]
                         rows.append(row)
                 else:

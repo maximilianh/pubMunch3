@@ -34,7 +34,7 @@ class DbReadTests(TestCaseBase):
             pslCnt = 0
             for psl in PslDbReader(conn, "select * from %s limit 10" % testTbl):
                 pslCnt += 1
-            self.failUnlessEqual(pslCnt, 10)
+            self.assertEqual(pslCnt, 10)
         finally:
             conn.close()
 
@@ -43,7 +43,7 @@ class DbReadTests(TestCaseBase):
         qNames = set()
         try:
             for psl in PslDbReader.targetRangeQuery(conn, testTbl, "chr22", 16650000, 20470000):
-                self.failUnlessEqual(psl.tName, "chr22")
+                self.assertEqual(psl.tName, "chr22")
                 qNames.add(psl.qName)
         finally:
             conn.close()

@@ -44,7 +44,7 @@ def main():
 	sentenceFile, geneFile = open(args.timestamp+'-sentence.txt', 'w'), open(args.timestamp+'-genes.txt', 'w')
 	for pmid, sentence, geneIds, geneNames, rawNames, relations in parseLines(args.inputFiles, entrez, relex, authors):
 		geneFile.write(formatMeta(pmid, geneIds, geneNames, rawNames, relations))
-		print formatMeta(pmid, geneIds, geneNames, rawNames, relations)
+		print(formatMeta(pmid, geneIds, geneNames, rawNames, relations))
 		sentenceFile.write(sentence + '\n')
 		geneFile.flush()
 	if len(nonamed) > 1:
@@ -174,7 +174,7 @@ def extractGenes(genesSupport, entrez, sentence):
 def findRelations(sentence, relex):
 	''' iterate through words in a sentence and extract all relations '''
 	relations = set()
-	for word in filter(None, re.split('[ ,.]', sentence)):
+	for word in [_f for _f in re.split('[ ,.]', sentence) if _f]:
 		if word in relex:
 			relations.add(word)
 	return relations

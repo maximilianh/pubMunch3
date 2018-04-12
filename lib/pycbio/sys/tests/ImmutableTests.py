@@ -1,5 +1,5 @@
 # Copyright 2006-2012 Mark Diekhans
-import unittest, sys, cPickle
+import unittest, sys, pickle
 if __name__ == '__main__':
     sys.path.append("../../..")
 from pycbio.sys.Immutable import Immutable
@@ -17,11 +17,11 @@ class ImmutableTests(TestCaseBase):
         ex = None
         try:
             obj.val = 111
-        except Exception, ex:
+        except Exception as ex:
             pass
         
-        self.failUnlessEqual(obj.val, 10)
-        self.failUnless(isinstance(ex, TypeError))
+        self.assertEqual(obj.val, 10)
+        self.assertTrue(isinstance(ex, TypeError))
 
     def testSlotsClass(self):
         class SlotsClass(Immutable):
@@ -34,11 +34,11 @@ class ImmutableTests(TestCaseBase):
         ex = None
         try:
             obj.val = 111
-        except Exception, ex:
+        except Exception as ex:
             pass
         
-        self.failUnlessEqual(obj.val, 10)
-        self.failUnless(isinstance(ex, TypeError))
+        self.assertEqual(obj.val, 10)
+        self.assertTrue(isinstance(ex, TypeError))
 
 def suite():
     suite = unittest.TestSuite()

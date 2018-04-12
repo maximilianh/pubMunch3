@@ -1,5 +1,5 @@
 # a tagger for the GNAT webservice
-import urllib, urllib2, logging
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, logging
 
 headers = ["gnatStart", "gnatEnd", "taxIds", "entrezIds", "gnatWord"]
 
@@ -7,8 +7,8 @@ def gnatOnText(text):
     url = 'http://bergman.smith.man.ac.uk:8081/'
     species = "9606,10090"
     #data = urllib.urlencode({'text' : text, 'species' : species, 'task':"gnorm"})
-    data = urllib.urlencode({'text' : text, 'species' : species, 'task':"gner"})
-    resp = urllib2.urlopen(url=url, data=data).read()
+    data = urllib.parse.urlencode({'text' : text, 'species' : species, 'task':"gner"})
+    resp = urllib.request.urlopen(url=url, data=data).read()
     # example output:
     # ['UnknownId', 'UserQuery', 'gocode', '-', '60047', '37', '53', 'heart contraction', '-']
     # ['UnknownId', 'UserQuery', 'gene', '10090;10090;9606;9606', '22059;22060;352997;7157', '0', '2', 'p53', '1.0']

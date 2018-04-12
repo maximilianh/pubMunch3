@@ -13,29 +13,35 @@
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
 # version 2.1 of the License, or (at your option) any later version.
-# 
+#
 # This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301  USA
 ######################### END LICENSE BLOCK #########################
 
-from mbcharsetprober import MultiByteCharSetProber
-from codingstatemachine import CodingStateMachine
-from chardistribution import EUCKRDistributionAnalysis
-from mbcssm import EUCKRSMModel
+from .mbcharsetprober import MultiByteCharSetProber
+from .codingstatemachine import CodingStateMachine
+from .chardistribution import EUCKRDistributionAnalysis
+from .mbcssm import EUCKR_SM_MODEL
+
 
 class EUCKRProber(MultiByteCharSetProber):
     def __init__(self):
-        MultiByteCharSetProber.__init__(self)
-        self._mCodingSM = CodingStateMachine(EUCKRSMModel)
-        self._mDistributionAnalyzer = EUCKRDistributionAnalysis()
+        super(EUCKRProber, self).__init__()
+        self.coding_sm = CodingStateMachine(EUCKR_SM_MODEL)
+        self.distribution_analyzer = EUCKRDistributionAnalysis()
         self.reset()
 
-    def get_charset_name(self):
+    @property
+    def charset_name(self):
         return "EUC-KR"
+
+    @property
+    def language(self):
+        return "Korean"

@@ -74,7 +74,7 @@ leftCommon = Counter()
 rightCommon = Counter()
 
 def getBestToString(countDict):
-    counts = countDict.items()
+    counts = list(countDict.items())
     counts.sort(key=operator.itemgetter(1), reverse=True)
     bestCounts = counts[:30]
     bestStrings = ["%s=%s" % (word, count) for word, count in bestCounts]
@@ -86,18 +86,18 @@ def reduce(word, dictList):
     sumCounts = {"l":defaultdict(int), "r" :defaultdict(int)}
     for countDict in dictList:
         if "l" in countDict:
-            for w, count in countDict["l"].iteritems():
+            for w, count in countDict["l"].items():
                 w = w.lower()
                 sumCounts["l"][w] += count
         if "r" in countDict:
-            for w, count in countDict["r"].iteritems():
+            for w, count in countDict["r"].items():
                 w = w.lower()
                 sumCounts["l"][w] += count
                 sumCounts["r"][w] += count
 
-    for w, count in sumCounts["l"].iteritems():
+    for w, count in sumCounts["l"].items():
         leftCommon[w]+=1
-    for w, count in sumCounts["r"].iteritems():
+    for w, count in sumCounts["r"].items():
         rightCommon[w]+=1
         
     leftDesc = getBestToString(sumCounts["l"])

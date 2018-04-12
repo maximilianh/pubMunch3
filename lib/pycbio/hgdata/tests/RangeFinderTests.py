@@ -70,14 +70,14 @@ class RangeTests(TestCaseBase):
         val = self.doQuery(rf, query[0], query[1], query[2], query[3])
         if debug and (val != expect):
             self.failTrace("strand of haveStrand="+str(rf.haveStrand), query, expect, val)
-        self.failUnlessEqual(val, expect)
+        self.assertEqual(val, expect)
         
     def doNoStrandQuery(self, rf, query):
         expect = query[5]
         val = self.doQuery(rf, query[0], query[1], query[2], None)
         if debug and (val != expect):
             self.failTrace("nostrand of haveStrand="+str(rf.haveStrand), query, expect, val)
-        self.failUnlessEqual(val, expect)
+        self.assertEqual(val, expect)
         
     def doQueries(self, rf, queries, useStrand):
         for query in queries:

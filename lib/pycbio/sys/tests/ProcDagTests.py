@@ -19,7 +19,7 @@ class ProcDagTests(TestCaseBase):
                 if not re.search(expectStr, s):
                     self.fail("'" +s+ "' doesn't match RE '" + expectStr + "'")
             else:
-                self.failUnlessEqual(s, expectStr)
+                self.assertEqual(s, expectStr)
         self.failIfChildProcs()
         self.failIfNumOpenFilesChanged(nopen)
         self.failIfMultipleThreads()
@@ -38,9 +38,9 @@ class ProcDagTests(TestCaseBase):
         err = None
         try:
             pd.wait()
-        except Exception,err:
+        except Exception as err:
             pass
-        self.failUnless(isinstance(err, ProcException))
+        self.assertTrue(isinstance(err, ProcException))
         self.commonChecks(nopen, pd, "false")
 
     def testSimplePipe(self):
@@ -61,9 +61,9 @@ class ProcDagTests(TestCaseBase):
         err = None
         try:
             pd.wait()
-        except Exception,err:
+        except Exception as err:
             pass
-        self.failUnless(isinstance(err, ProcException))
+        self.assertTrue(isinstance(err, ProcException))
         self.commonChecks(nopen, pd, "false | true")
 
     def testExecFail(self):
@@ -75,7 +75,7 @@ class ProcDagTests(TestCaseBase):
         ex = None
         try:
             pd.wait()
-        except Exception, ex:
+        except Exception as ex:
             pass
         expect = "exec failed: procDoesNotExist -r,\n    caused by: OSError: [Errno 2] No such file or directory"
         msg = str(ex)
@@ -103,7 +103,7 @@ class ProcDagTests(TestCaseBase):
         dr = DataReader()
         pd.create(("sort","-r"), stdin=inf, stdout=dr)
         pd.wait()
-        self.failUnlessEqual(dr.get(), "two\nthree\nsix\none\nfour\nfive\n")
+        self.assertEqual(dr.get(), "two\nthree\nsix\none\nfour\nfive\n")
         self.commonChecks(nopen, pd, "^sort -r <.+/input/simple1\\.txt >\\[DataWriter\\]", isRe=True)
 
     def testInArgMem(self):
@@ -125,7 +125,7 @@ class ProcDagTests(TestCaseBase):
         dr = DataReader()
         pr = pd.create(("tee",POut(dr)), stdin=inf, stdout="/dev/null")
         pd.wait()
-        self.failUnlessEqual(dr.get(), "one\ntwo\nthree\nfour\nfive\nsix\n")
+        self.assertEqual(dr.get(), "one\ntwo\nthree\nfour\nfive\nsix\n")
         self.commonChecks(nopen, pd, "^tee \\[DataWriter\\] <.+/input/simple1.txt >/dev/null$", isRe=True)
 
     def testOutArgNoOpen(self):
@@ -286,7 +286,7 @@ class ProcDagTests(TestCaseBase):
         ex = None
         try:
             pd.wait()
-        except ProcDagException, ex:
+        except ProcDagException as ex:
              pass
         msg = str(ex)
         expect = "cycle detected: entering: cat /dev/stdin <([Pipe])"

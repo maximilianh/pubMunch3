@@ -1,21 +1,24 @@
-from setuptools import setup, find_packages
+from __future__ import unicode_literals
 
-version = '0.1.3'
+from setuptools import setup
+
+version = '0.1.8.1'
 
 REQUIREMENTS = [
-    'beautifulsoup',
-    'requests'
+    'requests',
+    'bs4',
+    'six'
 ]
 
 setup(
-    name='incapsula-cracker',
+    name='incapsula-cracker-py3',
     version=version,
-    packages=find_packages(),
-    url='https://github.com/ziplokk1/incapsula-cracker',
+    packages=['incapsula'],
+    url='https://github.com/ziplokk1/incapsula-cracker-py3',
     license='LICENSE.txt',
     author='Mark Sanders',
     author_email='sdscdeveloper@gmail.com',
     install_requires=REQUIREMENTS,
-    description='A way to bypass incapsula robot checks when using requests or scrapy.',
+    description='A way to bypass incapsula robot checks when using requests.',
     include_package_data=True
 )

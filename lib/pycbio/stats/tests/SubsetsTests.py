@@ -18,7 +18,7 @@ class SubsetsTests(TestCaseBase):
         
         subsets = Subsets(SubsetsTests.testSet)
         ss = subsets.getSubsets()
-        self.failUnlessEqual(ss, expectSet)
+        self.assertEqual(ss, expectSet)
 
     def testGetInclusizeSubsets(self):
         expectSet = ((frozenset(("A",)),
@@ -26,7 +26,7 @@ class SubsetsTests(TestCaseBase):
                       frozenset(("A","C",))))
         subsets = Subsets(SubsetsTests.testSet)
         iss = subsets.getInclusiveSubsets(frozenset(("A", "C",)))
-        self.failUnlessEqual(iss, expectSet)
+        self.assertEqual(iss, expectSet)
 
 
 def suite():

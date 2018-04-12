@@ -54,7 +54,7 @@ def annotateFile(article, file):
         logging.info("Too many IDs, skipping doc %s" % article.articleId)
     else:
         rows = []
-        for geneId, geneRows in geneToRows.iteritems():
+        for geneId, geneRows in geneToRows.items():
             if len(geneRows)>=MINCOUNT:
                 rows.extend(geneRows)
         return rows

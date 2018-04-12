@@ -273,7 +273,7 @@ def parseKeyValList(fname):
         key, valStr1, valStr2 = line.rstrip("\n").split("\t")[:3]
         vals1 = valStr1.split("|")
         vals2 = valStr2.split("|")
-        data[key] = dict(zip(vals1, vals2))
+        data[key] = dict(list(zip(vals1, vals2)))
     return data
 
 def parseBands(fname):
@@ -284,7 +284,7 @@ def parseBands(fname):
         bandName, entrezIdStr, symStr = line.rstrip("\n").split("\t")[:3]
         entrezIds = entrezIdStr.split("|")
         syms = symStr.split("|")
-        entrezToSym = dict(zip(entrezIds, syms))
+        entrezToSym = dict(list(zip(entrezIds, syms)))
         data[bandName] = entrezToSym
     return data
 
@@ -379,8 +379,8 @@ def pmidDbLookup(pmid):
             logging.warn("Could not find %s, NCBI genes not used" % fname)
             return []
         logging.info("Opening NCBI genes PMID -> article mapping from %s" % fname)
-        import gdbm # gdbm does not exist on windows
-        pmidToEntrez = gdbm.open(fname, "r")
+        import dbm.gnu # gdbm does not exist on windows
+        pmidToEntrez = dbm.gnu.open(fname, "r")
     pmid = str(pmid)
     data = {}
     genes = []
@@ -486,12 +486,12 @@ def resolveSeqs(seqDict, seqCache=None):
         
     dnaMapper = seqMapLocal.DnaMapper(blatClient)
     dbList = ["hg19"]
-    dbSeqToSyms = dnaMapper.mapDnaToGenes(seqDict.keys(), "unknownDoc", dbList)
+    dbSeqToSyms = dnaMapper.mapDnaToGenes(list(seqDict.keys()), "unknownDoc", dbList)
 
     # reformat to dict entrez -> list of sequences
     entrezToSeqs = defaultdict(list)
-    for db, seqSyms in dbSeqToSyms.iteritems():
-        for seq, syms in seqSyms.iteritems():
+    for db, seqSyms in dbSeqToSyms.items():
+        for seq, syms in seqSyms.items():
             for sym in syms:
                 if sym not in symToEntrez:
                     logging.debug("Cannot resolve sym %s to entrez" % sym)
@@ -500,7 +500,7 @@ def resolveSeqs(seqDict, seqCache=None):
                     entrezToSeqs[eId].append(seq)
 
     ret = {}
-    for eId, seqs in entrezToSeqs.iteritems():
+    for eId, seqs in entrezToSeqs.items():
         ret[eId]= ("/".join(seqs), seqDict[seq])
 
     if seqCache!=None:
@@ -518,14 +518,14 @@ def resolveNonSymbols(markers):
     #passThrough = []
     geneDict = {}
 
-    for mType, idLocs in markers.iteritems():
+    for mType, idLocs in markers.items():
         logging.debug("Found matches for %s: %s" % (mType, idLocs))
         if mType in ["symbolMaybe", "symbol", "dnaSeq"]:
             continue
 
         typeGenes = {}
         # idLocs example: {'11p15.5': [(2310, 2317), (4015, 4022), (10665, 10672)]}
-        for markerId, locs in idLocs.iteritems():
+        for markerId, locs in idLocs.items():
             # resolve marker to dict of genes -> symbol
             geneSymDict = markerToGenes(mType, markerId)
             # some markers are not genes, just pass them through
@@ -536,7 +536,7 @@ def resolveNonSymbols(markers):
                 continue
             else:
             # one marker can represent several gene IDs (rare)
-                for gene, sym in geneSymDict.iteritems():
+                for gene, sym in geneSymDict.items():
                     typeGenes[gene] = (markerId, locs)
         geneDict[mType] = typeGenes
 
@@ -572,7 +572,7 @@ def resolveAmbiguousSymbols(nonSymDict, text, markers):
     """
     # create dict gene -> score, where score is number of non-symbol marker types that support it
     geneScoreDict = defaultdict(int)
-    for mType, geneLocs in nonSymDict.iteritems():
+    for mType, geneLocs in nonSymDict.items():
         for geneId in geneLocs:
             geneScoreDict[geneId] += 1
 
@@ -583,17 +583,17 @@ def resolveAmbiguousSymbols(nonSymDict, text, markers):
             continue
         idLocs = markers[mType]
         typeGenes = {}
-        for markerId, locs in idLocs.iteritems():
+        for markerId, locs in idLocs.items():
             geneSymDict = markerToGenes(mType, markerId)
             # no need to do anything if it's a clear, unambiguous symbol
             if len(geneSymDict)==1:
-                gene = geneSymDict.keys()[0]
+                gene = list(geneSymDict.keys())[0]
                 typeGenes[gene] = (markerId, locs)
                 continue
-            scores = [(g, geneScoreDict.get(g, 0)) for g in geneSymDict.keys()]
+            scores = [(g, geneScoreDict.get(g, 0)) for g in list(geneSymDict.keys())]
             bestGenes = maxbio.bestIdentifiers(scores)
             # some debugging output
-            allSyms = "/".join([str(x) for x in geneSymDict.values()])
+            allSyms = "/".join([str(x) for x in list(geneSymDict.values())])
             bestSym = geneSymDict[bestGenes[0]]
             exText = text[locs[0][0]:locs[0][1]]
             scoreText = str(scores)
@@ -631,7 +631,7 @@ def flipUnsureSymbols(text, annotatedGenes):
 
     sureGenes = defaultdict(list)
     # make a dict of all genes but the unsure symbols
-    for markerType, geneMarkers in annotatedGenes.iteritems():
+    for markerType, geneMarkers in annotatedGenes.items():
         if markerType=="symbolMaybe":
             continue
         for geneId in geneMarkers:
@@ -639,7 +639,7 @@ def flipUnsureSymbols(text, annotatedGenes):
 
     # find the unsure symbols with support
     sureSyms = {}
-    for geneId, markerLocTuple in annotatedGenes["symbolMaybe"].iteritems():
+    for geneId, markerLocTuple in annotatedGenes["symbolMaybe"].items():
         #for geneId, markerLocTuple in geneMarkers.iteritems():
         if geneId in sureGenes:
             suppMarker = sureGenes[geneId]
@@ -649,7 +649,7 @@ def flipUnsureSymbols(text, annotatedGenes):
 
     # flip unsure symbols to sure ones
     annotatedGenes.setdefault("symbol", {})
-    for geneId, markerLocTuple in sureSyms.iteritems():
+    for geneId, markerLocTuple in sureSyms.items():
         del annotatedGenes["symbolMaybe"][geneId]
         markerId, locs = markerLocTuple
         if geneId not in annotatedGenes["symbol"]:
@@ -676,8 +676,8 @@ def findGenes(text, pmid=None, seqCache=None):
     genesSupport = {}
     genePosList = []
     genes  = findGenesResolveByType(text, pmid=pmid, seqCache=seqCache)
-    for mType, geneIdDict in genes.iteritems():
-        for geneId, markerLocs in geneIdDict.iteritems():
+    for mType, geneIdDict in genes.items():
+        for geneId, markerLocs in geneIdDict.items():
             idStr, locs = markerLocs
             # only count a gene as found if it's an unambiguous symbol match with count > 3
             # or a not a symbol at all or an ambiguous symbol that occurs many times
@@ -687,7 +687,7 @@ def findGenes(text, pmid=None, seqCache=None):
                 #entrezIds.add(geneId)
                 genesSupport.setdefault(geneId, {}).setdefault(mType, []).append((idStr, locs))
             for start, end in locs:
-                genePosList.extend(range(start, end))
+                genePosList.extend(list(range(start, end)))
 
     return genesSupport, set(genePosList)
     
@@ -735,8 +735,8 @@ def rankGenes(text, pmid=None, seqCache=None):
     
     geneScores = Counter()
     geneMentions = defaultdict(list)
-    for markerType, geneDict in geneTypes.iteritems():
-        for gene, geneSupp in geneDict.iteritems():
+    for markerType, geneDict in geneTypes.items():
+        for gene, geneSupp in geneDict.items():
             recognizedId, startEndList = geneSupp
 
             if markerType in ['symbol']:
@@ -779,7 +779,7 @@ def findMarkersAsDict(text, pmid=None):
         for annot in findSequences(text):
             start, end, seq = annot
             res["dnaSeq"].setdefault(str(seq), []).append( (start, end) )
-            exclPos.update(range(start, end))
+            exclPos.update(list(range(start, end)))
 
     # find gene names and symbols, removing those that overlap a DNA sequence
     if "symbol" in searchTypes or "geneName" in searchTypes:
@@ -789,7 +789,7 @@ def findMarkersAsDict(text, pmid=None):
             start, end, markerType, geneId = annot
             if not rangeInSet(start, end, exclPos):
                 res[markerType].setdefault(str(geneId), []).append( (start, end) )
-                exclPos.update(range(start, end))
+                exclPos.update(list(range(start, end)))
 
     # add the entrez Db lookup results
     if "entrezDb" in searchTypes:
@@ -848,7 +848,7 @@ def loadMappings():
     logging.info("Loading %s" % fname)
     data = marshal.load(open(fname, "rb"))
     entrezToSym = data["entrez2sym"]
-    symToEntrez = dict([(y,x) for (x,y) in entrezToSym.iteritems()])
+    symToEntrez = dict([(y,x) for (x,y) in entrezToSym.items()])
 
 def markerToGenes(markerType, markerId):
     """ 

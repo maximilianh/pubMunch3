@@ -105,12 +105,12 @@ def getAlg(algName, defClass=None):
 def writeParamDict(paramDict, paramDictName):
     " pickle parameter to current dir "
     logging.debug("Writing parameters to %s" % paramDictName)
-    for key, val in paramDict.iteritems():
+    for key, val in paramDict.items():
         if val==None:
             logging.debug("parameter %s: None" % (key))
-        elif type(val)==types.BooleanType:
+        elif type(val)==bool:
             logging.debug("parameter %s: value %s" % (key, str(val)))
-        elif type(val)!=types.IntType:
+        elif type(val)!=int:
             logging.debug("parameter %s: %d values" % (key, len(val)))
         else:
             logging.debug("parameter %s: value %d" % (key, val))
@@ -214,7 +214,7 @@ def findFilesSubmitJobs(algNames, algMethod, inDirs, outDirs, outExt, \
             for inFile in baseNames:
                 inBase = splitext(basename(inFile))[0]
                 inBase = basename(inDir)+"_"+inBase
-                print "XX inBase is", inBase
+                print("XX inBase is", inBase)
                 outNames.add(inBase)
                 outFullname = join(outDir, inBase)+outExt
                 #mustNotExist(outFullname) # should not hurt to avoid this check...
@@ -412,7 +412,7 @@ def getHeaders(alg, addFields):
         logging.error("You need to define a variable 'headers' in your python file or class")
         sys.exit(1)
 
-    assert(type(alg.headers)==types.ListType)
+    assert(type(alg.headers)==list)
 
     headers = copy.copy(alg.headers)
     # if the algorithm is returning results in batch, it has to do IDs and snippets itself
@@ -498,7 +498,7 @@ def openOutfiles(outName, outTypes):
 
 def moveResults(outFiles, finalOutNames):
     " move from scratch/tmp to server "
-    for ext, outFile in outFiles.iteritems():
+    for ext, outFile in outFiles.items():
         outFile.close()
         logging.info("Moving %s to %s" % (outFile.name, finalOutNames[ext]))
         shutil.move(outFile.name, finalOutNames[ext])
@@ -728,7 +728,7 @@ def runReduce(algName, paramDict, path, outFilename, quiet=False, inFnames=None)
         logging.info("deleting existing file %s" % outFilename)
         os.remove(outFilename)
 
-    if isinstance(algName, basestring):
+    if isinstance(algName, str):
         alg = getAlg(algName, defClass="Map")
     else:
         alg = algName
@@ -761,7 +761,7 @@ def runReduce(algName, paramDict, path, outFilename, quiet=False, inFnames=None)
         binData = gzip.open(fileName, "rb").read()
         nodeData = marshal.loads(binData)
         del binData
-        for key, values in nodeData.iteritems():
+        for key, values in nodeData.items():
             if not hasattr(values, "__iter__"):
                 values = [values]
             # major change: append instead of extend
@@ -789,17 +789,17 @@ def runReduce(algName, paramDict, path, outFilename, quiet=False, inFnames=None)
 
     logging.info("Running data through reducer")
     meter = maxCommon.ProgressMeter(len(data))
-    for key, valList in data.iteritems():
+    for key, valList in data.items():
         tupleIterator = alg.reduce(key, valList)
         for tuple in tupleIterator:
             if tuple==None:
                 logging.debug("Got None, not writing anything")
                 continue
-            if type(tuple)==types.StringType: # make sure that returned value is a list
+            if type(tuple)==bytes: # make sure that returned value is a list
                 tuple = [tuple]
-            if type(tuple)==types.IntType: # make sure that it's a string
+            if type(tuple)==int: # make sure that it's a string
                 tuple = [str(tuple)]
-            tuple = [unicode(x).encode("utf8") for x in tuple] # convert to utf8
+            tuple = [str(x).encode("utf8") for x in tuple] # convert to utf8
             if ofh!=None:
                 ofh.write("\t".join(tuple))
                 ofh.write("\n")
@@ -835,14 +835,14 @@ def getLastOutType(alg, paramDict):
     if "setup" in dir(alg):
         logging.debug("Running setup")
         alg.setup(paramDict)
-    assert(type(alg.outTypes)==types.ListType)
+    assert(type(alg.outTypes)==list)
     assert(len(set(alg.outTypes))==len(alg.outTypes)) # no duplicate out type
     outExt = alg.outTypes[-1]
     return outExt
 
 def splitList(a, n):
     k, m = len(a) / n, len(a) % n
-    return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in xrange(n))
+    return (a[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(n))
 
 def writeParts(ll, outDir):
     " writes lines to numbered textFiles in outDir "
@@ -948,9 +948,9 @@ def annotate(algNames, textDirs, paramDict, outDirs, cleanUp=False, runNow=False
     runNow waits until jobs have finished
     concat will concatenate all output files and write to outDir (actually a textfile)
     """
-    if isinstance(algNames, basestring):
+    if isinstance(algNames, str):
         algNames = algNames.split(",")
-    if isinstance(outDirs, basestring):
+    if isinstance(outDirs, str):
         outDirs = outDirs.split(",")
 
     for algName in algNames:
@@ -1006,8 +1006,8 @@ def mapReduceTestRun(datasets, alg, paramDict, tmpDir, updateIds=None, skipMap=F
 
 def writeRow(row, outFh):
     " write list as tab-sep to ofh "
-    newRow = [pubStore.removeTabNl(unicode(x)) for x in row]
-    newRow = [i.encode('utf8') if isinstance(i, unicode) else str(i) for i in newRow]
+    newRow = [pubStore.removeTabNl(str(x)) for x in row]
+    newRow = [i.encode('utf8') if isinstance(i, str) else str(i) for i in newRow]
     outFh.write("\t".join(newRow))
     outFh.write("\n")
 
@@ -1045,7 +1045,7 @@ def mapReduce(algName, textDirs, paramDict, outFilename, skipMap=False, cleanUp=
     logging.debug("Running map/reduce on text directories %s" % textDirs)
     alg = getAlg(algName, defClass="Map") # just to check if algName is valid
 
-    if isinstance(textDirs, basestring):
+    if isinstance(textDirs, str):
         textDirs = [textDirs]
 
     if tmpDir==None:
@@ -1124,7 +1124,7 @@ if __name__ == '__main__':
 
     binData = gzip.open(paramFile, "rb").read()
     paramDict = marshal.loads(binData)
-    for key, val in paramDict.iteritems():
+    for key, val in paramDict.items():
         logging.log(5, "parameter %s = %s" % (key, str(val)))
 
     alg = getAlg(algName, defClass=string.capitalize(algMethod))

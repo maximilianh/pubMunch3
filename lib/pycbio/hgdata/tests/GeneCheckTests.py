@@ -16,22 +16,22 @@ class ReadTests(TestCaseBase):
         
     def testRdbUniq(self):
         checks = GeneCheckTbl(self.getInputFile("geneCheck.rdb"), idIsUniq=True, isRdb=True)
-        self.failUnlessEqual(len(checks), 53)
+        self.assertEqual(len(checks), 53)
         self._checkDmp(checks)
         
     def testTsvUniq(self):
         checks = GeneCheckTbl(self.getInputFile("geneCheck.tsv"), idIsUniq=True, isRdb=False)
-        self.failUnlessEqual(len(checks), 53)
+        self.assertEqual(len(checks), 53)
         self._checkDmp(checks)
         
     def testRdbMulti(self):
         checks = GeneCheckTbl(self.getInputFile("geneCheckMulti.rdb"), isRdb=True)
-        self.failUnlessEqual(len(checks), 8)
+        self.assertEqual(len(checks), 8)
         self._checkDmp(checks)
         
     def testTsvMulti(self):
         checks = GeneCheckTbl(self.getInputFile("geneCheckMulti.tsv"), isRdb=False)
-        self.failUnlessEqual(len(checks), 8)
+        self.assertEqual(len(checks), 8)
         self._checkDmp(checks)
         
 def suite():

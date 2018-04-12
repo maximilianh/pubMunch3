@@ -45,7 +45,7 @@ def annotateFile(article, file):
     if "drug" not in text and "compound" not in text and "inhibitor" not in text and "agent" not in text:
         return
     #for match in wordRe.finditer(text):
-    for syn, reAndDrugName in drugNames.iteritems():
+    for syn, reAndDrugName in drugNames.items():
         #logging.debug("word %s" % word)
         synRe, drugName = reAndDrugName
         if syn in text:

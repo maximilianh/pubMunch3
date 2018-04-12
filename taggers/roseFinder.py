@@ -36,13 +36,13 @@ def annotateFile(article, file):
         foundProt = None
         foundProtName = None
         # look for protein name
-        for protName, protId in proteinIds.iteritems():
+        for protName, protId in proteinIds.items():
             if protName in phraseLow:
                 foundProt = protId
                 foundProtName = protName
                 break
         # look for gene name
-        for geneName, protId in geneIds.iteritems():
+        for geneName, protId in geneIds.items():
             phraseWords = set(re.split("[, ;!.-]", phrase))
             if geneName in phraseWords:
                 foundProt = protId

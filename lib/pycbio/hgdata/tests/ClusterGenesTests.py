@@ -15,15 +15,15 @@ class ReadTests(TestCaseBase):
             clCnt += 1
             for g in cl:
                 geneCnt += 1
-        self.failUnlessEqual(clCnt, 169)
-        self.failUnlessEqual(geneCnt, 192)
+        self.assertEqual(clCnt, 169)
+        self.assertEqual(geneCnt, 192)
 
         # try getting gene, and go back to it's cluster
-        self.failUnlessEqual(len(clusters.genes["NM_022114.2"]), 1)
+        self.assertEqual(len(clusters.genes["NM_022114.2"]), 1)
         g = clusters.genes["NM_022114.2"][0]
         cl = g.clusterObj
-        self.failUnlessEqual(len(cl), 2)
-        self.failUnless((cl[0].gene == "NM_199454.1") or (cl[1].gene == "NM_199454.1"))
+        self.assertEqual(len(cl), 2)
+        self.assertTrue((cl[0].gene == "NM_199454.1") or (cl[1].gene == "NM_199454.1"))
         
 
 def suite():

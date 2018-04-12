@@ -13,9 +13,9 @@ class TabFileTests(TestCaseBase):
     def checkRowsCols(self, rows, expectNumRows, expectNumCols):
         numRows = 0
         for row in rows:
-            self.failUnlessEqual(len(row), expectNumCols)
+            self.assertEqual(len(row), expectNumCols)
             numRows += 1
-        self.failUnlessEqual(numRows, expectNumRows)
+        self.assertEqual(numRows, expectNumRows)
         
     def testTable(self):
         tbl = TabFile(self.getInputFile("types.tsv"))

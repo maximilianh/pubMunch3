@@ -1,6 +1,6 @@
 # a few convenience functions to query the new crossref API
 
-import urllib, urllib2, json, doctest, logging
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, json, doctest, logging
 import maxCommon
 
 #def dois(issn):
@@ -31,7 +31,7 @@ def lookupDoi(metaInfoDict, repeatCount=2, delaySecs=5):
     logging.debug("crossref.org query %s" % freeFormCitStr)
     url = "https://api.crossref.org/works"
 
-    geturl =  url + "?query=" + urllib2.quote(freeFormCitStr.encode('utf-8'))
+    geturl =  url + "?query=" + urllib.parse.quote(freeFormCitStr.encode('utf-8'))
 
     # send request
     httpResp = maxCommon.retryHttpRequest(geturl, None, delaySecs=delaySecs, repeatCount=repeatCount)

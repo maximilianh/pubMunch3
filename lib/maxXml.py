@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import logging, re, urllib
-import xml.etree.cElementTree as etree
+import logging, re, urllib.request, urllib.parse, urllib.error
+import xml.etree.ElementTree as etree
 
 class XmlParser(object):
     """ class to represent an xml tree (using ElementTree)
@@ -58,7 +58,7 @@ class XmlParser(object):
 
     def fromUrl(self, url, removeNamespaces=False, stopWords=[]):
         logging.debug("Retrieving %s" % url)
-        text = urllib.urlopen(url).read()
+        text = urllib.request.urlopen(url).read()
         self.fromString(text, removeNamespaces=removeNamespaces)
         #for w in stopWords:
             #if w in text:
@@ -72,7 +72,7 @@ class XmlParser(object):
                 el.tag = el.tag.split('}', 1)[1]
 
     def _hasAttribs(self, el, reqAttrDict):
-        for attr, value in reqAttrDict.iteritems():
+        for attr, value in reqAttrDict.items():
             if el.attrib.get(attr, None)!=value:
                 return False
         return True
@@ -117,7 +117,7 @@ class XmlParser(object):
             yield XmlParser(root=el)
 
     def __repr__(self):
-        return etree.tostring(self.root)
+        return etree.tostring(self.root, encoding='unicode')
 
 def strip_namespace_inplace(etree, namespace=None,remove_from_attr=True):
     """ Takes a parsed ET structure and does an in-place removal of all namespaces,
@@ -139,7 +139,7 @@ def strip_namespace_inplace(etree, namespace=None,remove_from_attr=True):
     if namespace==None: # all namespaces
         for elem in etree.getiterator():
             tagname = elem.tag
-            if not isinstance(elem.tag, basestring):
+            if not isinstance(elem.tag, str):
                 continue
             if tagname[0]=='{':
                 elem.tag = tagname[ tagname.index('}',1)+1:]

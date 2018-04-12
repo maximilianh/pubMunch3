@@ -1,9 +1,13 @@
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 from collections import defaultdict
 import itertools
 import sys
 from bs4.element import (
     CharsetMetaAttributeValue,
     ContentMetaAttributeValue,
+    HTMLAwareEntitySubstitution,
     whitespace_re
     )
 
@@ -80,9 +84,12 @@ builder_registry = TreeBuilderRegistry()
 class TreeBuilder(object):
     """Turn a document into a Beautiful Soup object tree."""
 
+    NAME = "[Unknown tree builder]"
+    ALTERNATE_NAMES = []
     features = []
 
     is_xml = False
+    picklable = False
     preserve_whitespace_tags = set()
     empty_element_tags = None # A tag will be considered an empty-element
                               # tag when and only when it has no contents.
@@ -147,18 +154,29 @@ class TreeBuilder(object):
 
         Modifies its input in place.
         """
+        if not attrs:
+            return attrs
         if self.cdata_list_attributes:
             universal = self.cdata_list_attributes.get('*', [])
             tag_specific = self.cdata_list_attributes.get(
-                tag_name.lower(), [])
-            for cdata_list_attr in itertools.chain(universal, tag_specific):
-                if cdata_list_attr in dict(attrs):
-                    # Basically, we have a "class" attribute whose
-                    # value is a whitespace-separated list of CSS
-                    # classes. Split it into a list.
-                    value = attrs[cdata_list_attr]
-                    values = whitespace_re.split(value)
-                    attrs[cdata_list_attr] = values
+                tag_name.lower(), None)
+            for attr in list(attrs.keys()):
+                if attr in universal or (tag_specific and attr in tag_specific):
+                    # We have a "class"-type attribute whose string
+                    # value is a whitespace-separated list of
+                    # values. Split it into a list.
+                    value = attrs[attr]
+                    if isinstance(value, str):
+                        values = whitespace_re.split(value)
+                    else:
+                        # html5lib sometimes calls setAttributes twice
+                        # for the same tag when rearranging the parse
+                        # tree. On the second call the attribute value
+                        # here is already a list.  If this happens,
+                        # leave the value alone rather than trying to
+                        # split it again.
+                        values = value
+                    attrs[attr] = values
         return attrs
 
 class SAXTreeBuilder(TreeBuilder):
@@ -213,9 +231,14 @@ class HTMLTreeBuilder(TreeBuilder):
     Such as which tags are empty-element tags.
     """
 
-    preserve_whitespace_tags = set(['pre', 'textarea'])
-    empty_element_tags = set(['br' , 'hr', 'input', 'img', 'meta',
-                              'spacer', 'link', 'frame', 'base'])
+    preserve_whitespace_tags = HTMLAwareEntitySubstitution.preserve_whitespace_tags
+    empty_element_tags = set([
+        # These are from HTML5.
+        'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'menuitem', 'meta', 'param', 'source', 'track', 'wbr',
+
+        # These are from HTML4, removed in HTML5.
+        'spacer', 'frame'
+    ])
 
     # The HTML standard defines these attributes as containing a
     # space-separated list of values, not a single value. That is,
@@ -286,6 +309,9 @@ def register_treebuilders_from(module):
             this_module.__all__.append(name)
             # Register the builder while we're at it.
             this_module.builder_registry.register(obj)
+
+class ParserRejectedMarkup(Exception):
+    pass
 
 # Builders are registered in reverse order of priority, so that custom
 # builder registrations will take precedence. In general, we want lxml

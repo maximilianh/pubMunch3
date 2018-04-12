@@ -1,5 +1,5 @@
 # find descriptions of variants in text
-import logging, gdbm, marshal, zlib, copy, struct, random, sqlite3, types
+import logging, dbm.gnu, marshal, zlib, copy, struct, random, sqlite3, types
 from collections import defaultdict, namedtuple
 from os.path import join
 
@@ -291,7 +291,7 @@ class SeqData(object):
         " return a list of entrez IDs for given symbol "
         if self.symToEntrez == None:
             self.symToEntrez = defaultdict(list)
-            for e, s in self.entrez2sym.iteritems():
+            for e, s in self.entrez2sym.items():
                 self.symToEntrez[s].append(e)
         entrezIds = self.symToEntrez.get(sym)
         return entrezIds
@@ -395,14 +395,14 @@ class VariantDescription(object):
     def asRow(self):
         row = []
         for i in self.__slots__:
-            row.append(unicode(getattr(self, i)))
+            row.append(str(getattr(self, i)))
         return row
 
     def __repr__(self):
         # return ",".join(self.asRow())
         parts = []
         for field in self.__slots__:
-            parts.append(field + "=" + repr(unicode(getattr(self, field))))
+            parts.append(field + "=" + repr(str(getattr(self, field))))
         return "VariantDescription(%s)" % ",".join(parts)
 
 class SeqVariantData(object):
@@ -442,7 +442,7 @@ class SeqVariantData(object):
         ends = []
         snippets = []
         mentionedRsIds = []
-        for rsId, mentions in dbSnpMentionsByRsId.iteritems():
+        for rsId, mentions in dbSnpMentionsByRsId.items():
             rsStarts, rsEnds, rsPatNames, rsSnips, rsTexts = mentionsFields(mentions, text)
             starts.extend(rsStarts)
             ends.extend(rsEnds)
@@ -469,7 +469,7 @@ class SeqVariantData(object):
             if rawStr:
                 s = str(s)
             else:
-                s = unicode(s)
+                s = str(s)
             row.append(s)
         return row
 
@@ -477,7 +477,7 @@ class SeqVariantData(object):
         # return ",".join(self.asRow())
         parts = []
         for field in self.__slots__:
-            parts.append(field + "=" + repr(unicode(getattr(self, field))))
+            parts.append(field + "=" + repr(str(getattr(self, field))))
         return "SeqVariantData(%s)" % ",".join(parts)
 
 # ===== FUNCTIONS =================
@@ -575,7 +575,7 @@ def parseRegex(mutDataDir):
         regexList.append((row.seqType, row.mutType, isCoding, patName, patComp))
         counts[(row.seqType, row.mutType)] += 1
 
-    for regexType, count in counts.iteritems():
+    for regexType, count in counts.items():
             logger.info("regexType %s, found %d regexes" % (str(regexType), count))
     return regexList
 
@@ -849,7 +849,7 @@ def findVariantDescriptions(text, exclPos=set()):
     variants["dbSnp"] = []
     variants["intron"] = []
 
-    for varName, mentions in varMentions.iteritems():
+    for varName, mentions in varMentions.items():
         variant = varDescObj[varName]
         variants[variant.seqType].append((variant, mentions))
     variants = dict(variants)
@@ -933,7 +933,7 @@ def newToOldRefseqs(accs):
         prefix, suffix = newAcc.split(".")
         version = int(suffix) - 1
         if version != 0:
-            oldVersions = range(0, version)
+            oldVersions = list(range(0, version))
             oldVersions = [ov + 1 for ov in oldVersions]
             for oldVersion in range(0, version):
                 oldVersion = oldVersion + 1
@@ -1367,7 +1367,7 @@ def groundVariant(docId, text, variant, mentions, snpMentions, entrezGenes, inse
             varRsIds = bedToRsIds(beds)
             # mentionedDbSnpVars = getSnpMentions(varRsIds, mutations["dbSnp"])
             mentionedDbSnpVars = getSnpMentions(varRsIds, snpMentions)
-            mappedRsIds.extend(mentionedDbSnpVars.keys())
+            mappedRsIds.extend(list(mentionedDbSnpVars.keys()))
 
             groundedVar = SeqVariantData(varId, protVars, codVars, rnaVars, comment, beds, \
                 entrezGene, geneSym, varRsIds, mentionedDbSnpVars, mentions, text, seqType=variant.seqType)

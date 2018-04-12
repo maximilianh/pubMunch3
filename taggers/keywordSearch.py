@@ -22,7 +22,7 @@ def searchText(text, kwDict):
             #result = [ match.start(), match.end(), word ]
             #yield result
     text = text.upper()
-    for word, wordId in kwDict.iteritems():
+    for word, wordId in kwDict.items():
         word = word.upper()
         startPos = text.find(word)
         if startPos == -1:

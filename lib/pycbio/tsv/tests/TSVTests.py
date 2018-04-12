@@ -12,23 +12,23 @@ from pycbio.hgdata.AutoSql import intArrayType
 class ReadTests(TestCaseBase):
     def testLoad(self):
         tsv = TSVTable(self.getInputFile("mrna1.tsv"))
-        self.failUnlessEqual(len(tsv), 10)
+        self.assertEqual(len(tsv), 10)
         for r in tsv:
-            self.failUnlessEqual(len(r), 22)
+            self.assertEqual(len(r), 22)
         r = tsv[0]
-        self.failUnlessEqual(r["qName"], "BC032353")
-        self.failUnlessEqual(r[10],"BC032353")
-        self.failUnlessEqual(r.qName, "BC032353")
+        self.assertEqual(r["qName"], "BC032353")
+        self.assertEqual(r[10],"BC032353")
+        self.assertEqual(r.qName, "BC032353")
 
     def testMultiIdx(self):
         tsv = TSVTable(self.getInputFile("mrna1.tsv"), multiKeyCols=("tName", "tStart"))
         rows = tsv.idx.tName["chr1"]
-        self.failUnlessEqual(len(rows), 10)
-        self.failUnlessEqual(rows[1].qName, "AK095183")
+        self.assertEqual(len(rows), 10)
+        self.assertEqual(rows[1].qName, "AK095183")
 
         rows = tsv.idx.tStart["4268"]
-        self.failUnlessEqual(len(rows), 5)
-        self.failUnlessEqual(rows[0].qName, "BC015400")
+        self.assertEqual(len(rows), 5)
+        self.assertEqual(rows[0].qName, "BC015400")
 
     @staticmethod
     def onOffParse(str):
@@ -54,16 +54,16 @@ class ReadTests(TestCaseBase):
         tsv = TSVTable(self.getInputFile(inFile), typeMap=typeMap)
 
         r = tsv[0]
-        self.failUnlessEqual(r.strCol, "name1")
-        self.failUnlessEqual(r.intCol, 10)
-        self.failUnlessEqual(r.floatCol, 10.01)
-        self.failUnlessEqual(str(r), "name1\t10\t10.01\ton")
+        self.assertEqual(r.strCol, "name1")
+        self.assertEqual(r.intCol, 10)
+        self.assertEqual(r.floatCol, 10.01)
+        self.assertEqual(str(r), "name1\t10\t10.01\ton")
 
         r = tsv[2]
-        self.failUnlessEqual(r.strCol, "name3")
-        self.failUnlessEqual(r.intCol, 30)
-        self.failUnlessEqual(r.floatCol, 30.555)
-        self.failUnlessEqual(str(r), "name3\t30\t30.555\toff")
+        self.assertEqual(r.strCol, "name3")
+        self.assertEqual(r.intCol, 30)
+        self.assertEqual(r.floatCol, 30.555)
+        self.assertEqual(str(r), "name3\t30\t30.555\toff")
 
     def testColType(self):
         self.doTestColType("types.tsv")
@@ -80,26 +80,26 @@ class ReadTests(TestCaseBase):
         tsv = TSVTable(self.getInputFile("mrna1.tsv"), uniqKeyCols="qName",
                   typeMap=typeMap, defaultColType=int)
         r = tsv.idx.qName["AK095183"]
-        self.failUnlessEqual(r.tStart, 4222)
-        self.failUnlessEqual(r.tEnd, 19206)
-        self.failUnlessEqual(r.tName, "chr1")
-        self.failUnlessEqual(r.tStart, 4222)
+        self.assertEqual(r.tStart, 4222)
+        self.assertEqual(r.tEnd, 19206)
+        self.assertEqual(r.tName, "chr1")
+        self.assertEqual(r.tStart, 4222)
 
         tStarts = (4222,4832,5658,5766,6469,6719,7095,7355,7777,8130,14600,19183)
-        self.failUnlessEqual(len(r.tStarts), len(tStarts))
-        for i in xrange(len(tStarts)):
-            self.failUnlessEqual(r.tStarts[i], tStarts[i])
+        self.assertEqual(len(r.tStarts), len(tStarts))
+        for i in range(len(tStarts)):
+            self.assertEqual(r.tStarts[i], tStarts[i])
 
     def testMissingIdxCol(self):
         err = None
         try:
             tsv = TSVTable(self.getInputFile("mrna1.tsv"), multiKeyCols=("noCol",))
-        except TSVError,e:
+        except TSVError as e:
             err = e
-        self.failIfEqual(err, None)
+        self.assertNotEqual(err, None)
         # should have chained exception
-        self.failIfEqual(err.cause, None)
-        self.failUnlessEqual(err.cause.message, "key column \"noCol\" is not defined")
+        self.assertNotEqual(err.cause, None)
+        self.assertEqual(err.cause.message, "key column \"noCol\" is not defined")
 
     def testColNameMap(self):
         typeMap = {"int_col": int, "float_col": float, "onOff_col": (self.onOffParse, self.onOffFmt)}
@@ -107,16 +107,16 @@ class ReadTests(TestCaseBase):
         tsv = TSVTable(self.getInputFile('typesColNameMap.tsv'), typeMap=typeMap, columnNameMapper=lambda s: s.replace(' ', '_'))
 
         r = tsv[0]
-        self.failUnlessEqual(r.str_col, "name1")
-        self.failUnlessEqual(r.int_col, 10)
-        self.failUnlessEqual(r.float_col, 10.01)
-        self.failUnlessEqual(str(r), "name1\t10\t10.01\ton")
+        self.assertEqual(r.str_col, "name1")
+        self.assertEqual(r.int_col, 10)
+        self.assertEqual(r.float_col, 10.01)
+        self.assertEqual(str(r), "name1\t10\t10.01\ton")
 
         r = tsv[2]
-        self.failUnlessEqual(r.str_col, "name3")
-        self.failUnlessEqual(r.int_col, 30)
-        self.failUnlessEqual(r.float_col, 30.555)
-        self.failUnlessEqual(str(r), "name3\t30\t30.555\toff")
+        self.assertEqual(r.str_col, "name3")
+        self.assertEqual(r.int_col, 30)
+        self.assertEqual(r.float_col, 30.555)
+        self.assertEqual(str(r), "name3\t30\t30.555\toff")
 
     def testWrite(self):
         tsv = TSVTable(self.getInputFile("mrna1.tsv"), uniqKeyCols="qName")
@@ -141,9 +141,9 @@ class ReadTests(TestCaseBase):
         "routine to verify TSVReader on a mrna1.tsv derived file"
         rowCnt = 0
         for row in TSVReader(inFile):
-            self.failUnlessEqual(len(row), 22)
+            self.assertEqual(len(row), 22)
             rowCnt += 1
-        self.failUnlessEqual(rowCnt, 10)
+        self.assertEqual(rowCnt, 10)
 
     def testReader(self):
         self.readMRna1(self.getInputFile("mrna1.tsv"))
@@ -162,20 +162,20 @@ class ReadTests(TestCaseBase):
         err = None
         try:
             tsv = TSVTable(self.getInputFile("dupCol.tsv"))
-        except TSVError,e:
+        except TSVError as e:
             err = e
-        self.failIfEqual(err, None)
-        self.failUnlessEqual(str(err), "Duplicate column name: col1")
+        self.assertNotEqual(err, None)
+        self.assertEqual(str(err), "Duplicate column name: col1")
 
     def testAllowEmptyReader(self):
         cnt = 0
         for row in TSVReader("/dev/null", allowEmpty=True):
             cnt += 1
-        self.failUnlessEqual(cnt, 0)
+        self.assertEqual(cnt, 0)
 
     def testAllowEmptyTbl(self):
         tbl = TSVTable("/dev/null", allowEmpty=True)
-        self.failUnlessEqual(len(tbl), 0)
+        self.assertEqual(len(tbl), 0)
 
 def suite():
     suite = unittest.TestSuite()

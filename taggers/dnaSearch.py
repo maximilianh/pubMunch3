@@ -2,7 +2,7 @@ import pubDnaFind, orgDetect, pubConf
 
 def findDbs(text):
     """ find species in text """
-    for genome, keywords in pubConf.speciesNames.iteritems():
+    for genome, keywords in pubConf.speciesNames.items():
         for keyword in keywords:
             start = text.find(keyword)
             if start==-1:

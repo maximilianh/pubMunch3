@@ -9,35 +9,35 @@ from pycbio.hgdata.Psl import PslTbl
 class ReadTests(TestCaseBase):
     def testLoad(self):
         pslTbl = PslTbl(self.getInputFile("pslTest.psl"))
-        self.failUnlessEqual(len(pslTbl), 14)
+        self.assertEqual(len(pslTbl), 14)
         r = pslTbl[1]
-        self.failUnlessEqual(r.blockCount, 13)
-        self.failUnlessEqual(len(r.blocks), 13)
-        self.failUnlessEqual(r.qName, "NM_198943.1")
+        self.assertEqual(r.blockCount, 13)
+        self.assertEqual(len(r.blocks), 13)
+        self.assertEqual(r.qName, "NM_198943.1")
 
     def countQNameHits(self, pslTbl, qName):
         cnt = 0
         for p in pslTbl.getByQName(qName):
-            self.failUnlessEqual(p.qName, qName)
+            self.assertEqual(p.qName, qName)
             cnt += 1
         return cnt
 
     def testQNameIdx(self):
         pslTbl = PslTbl(self.getInputFile("pslTest.psl"), qNameIdx=True)
-        self.failIf(pslTbl.haveQName("fred"))
-        self.failUnless(pslTbl.haveQName("NM_001327.1"))
-        self.failUnlessEqual(self.countQNameHits(pslTbl, "NM_198943.1"), 1)
-        self.failUnlessEqual(self.countQNameHits(pslTbl, "fred"), 0)
-        self.failUnlessEqual(self.countQNameHits(pslTbl, "NM_000014.3"), 2)
-        self.failUnlessEqual(self.countQNameHits(pslTbl, "NM_001327.1"), 4)
+        self.assertFalse(pslTbl.haveQName("fred"))
+        self.assertTrue(pslTbl.haveQName("NM_001327.1"))
+        self.assertEqual(self.countQNameHits(pslTbl, "NM_198943.1"), 1)
+        self.assertEqual(self.countQNameHits(pslTbl, "fred"), 0)
+        self.assertEqual(self.countQNameHits(pslTbl, "NM_000014.3"), 2)
+        self.assertEqual(self.countQNameHits(pslTbl, "NM_001327.1"), 4)
 
     def testPslXCdsGenome(self):
         pslTbl = PslTbl(self.getInputFile("refseq.hg19.prot-genome.pslx"))
-        self.failUnlessEqual(len(pslTbl), 4)
+        self.assertEqual(len(pslTbl), 4)
         for psl in pslTbl:
             for blk in psl.blocks:
-                self.failUnlessEqual(len(blk.qSeq), len(blk))
-                self.failUnlessEqual(len(blk.tSeq), len(blk))
+                self.assertEqual(len(blk.qSeq), len(blk))
+                self.assertEqual(len(blk.tSeq), len(blk))
 
 class OpsTests(TestCaseBase):
     "test operations of PSL objects"
@@ -54,7 +54,7 @@ class OpsTests(TestCaseBase):
         return Psl(ps.split("\t"))
     
     def __rcTest(self, psIn, psExpect):
-        self.failUnlessEqual(str(OpsTests.__splitToPsl(psIn).reverseComplement()), psExpect)
+        self.assertEqual(str(OpsTests.__splitToPsl(psIn).reverseComplement()), psExpect)
 
     def testReverseComplement(self):
         self.__rcTest(OpsTests.psPos, "0	10	111	0	1	13	3	344548	--	NM_025031.1	664	21	155	chr22	49554710	48109515	48454184	4	81,12,11,17,	509,603,615,626,	1100526,1101151,1445166,1445178,")
@@ -65,7 +65,7 @@ class OpsTests(TestCaseBase):
         self.__rcTest(OpsTests.psTransNegNeg, "47	4	0	0	1	122	1	46	++	AA608343.1b	186	5	178	chr6	170899992	29962882	29962979	2	21,30,	5,148,	29962882,29962949,")
 
     def __swapTest(self, psIn, psExpect):
-        self.failUnlessEqual(str(OpsTests.__splitToPsl(psIn).swapSides(keepTStrandImplicit=True)), psExpect)
+        self.assertEqual(str(OpsTests.__splitToPsl(psIn).swapSides(keepTStrandImplicit=True)), psExpect)
 
     def testSwapSizes(self):
         self.__swapTest(OpsTests.psPos, "0	10	111	0	3	344548	1	13	+	chr22	49554710	48109515	48454184	NM_025031.1	664	21	155	4	17,11,12,81,	48109515,48109533,48453547,48454103,	21,38,49,74,")
@@ -76,7 +76,7 @@ class OpsTests(TestCaseBase):
         self.__swapTest(OpsTests.psTransNegNeg, "47	4	0	0	1	46	1	122	--	chr6	170899992	29962882	29962979	AA608343.1b	186	5	178	2	30,21,	140937013,140937089,	8,160,")
         
     def __swapDropImplicitTest(self, psIn, psExpect):
-        self.failUnlessEqual(str(OpsTests.__splitToPsl(psIn).swapSides(keepTStrandImplicit=False)), psExpect)
+        self.assertEqual(str(OpsTests.__splitToPsl(psIn).swapSides(keepTStrandImplicit=False)), psExpect)
 
     def testSwapSizesDropImplicit(self):
         self.__swapDropImplicitTest(OpsTests.psPos, "0	10	111	0	3	344548	1	13	++	chr22	49554710	48109515	48454184	NM_025031.1	664	21	155	4	17,11,12,81,	48109515,48109533,48453547,48454103,	21,38,49,74,")

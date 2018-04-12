@@ -37,7 +37,7 @@ version_number = '1.0'
 try:
     from re2 import compile, VERBOSE, IGNORECASE
 except:
-    print "Failed to import module re2, falling back to re module (a lot slower)"
+    print("Failed to import module re2, falling back to re module (a lot slower)")
     from re import compile, VERBOSE, IGNORECASE
 
 from os.path import exists
@@ -98,25 +98,25 @@ class Mutation(object):
         try:
             self.__position = int(Position)
         except ValueError:
-            raise MutationError, "Position must be an integer"
+            raise MutationError("Position must be an integer")
         if self.__position < 1:
-            raise MutationError, "Position must be greater than 0"
+            raise MutationError("Position must be greater than 0")
     
     def _get_position(self):
         return self.__position
     Position = property(_get_position)
 
     def __str__(self):
-        raise NotImplementedError, 'Mutation subclasses must override str()'
+        raise NotImplementedError('Mutation subclasses must override str()')
 
     def __eq__(self,other):
-        raise NotImplementedError, 'Mutation subclasses must override =='
+        raise NotImplementedError('Mutation subclasses must override ==')
 
     def __ne__(self,other):
-        raise NotImplementedError, 'Mutation subclasses must override !-'
+        raise NotImplementedError('Mutation subclasses must override !-')
 
     def __hash__(self):
-        raise NotImplementedError, 'Mutation subclasses must override hash()'
+        raise NotImplementedError('Mutation subclasses must override hash()')
 
 class PointMutation(Mutation):
     """ A class for storing information about protein point mutations
@@ -130,8 +130,8 @@ class PointMutation(Mutation):
     # any valid identity which is passed in will be a key in this dict, 
     # and it avoids having to analyze which format the input residue 
     # was passed in as.  
-    _abbreviation_lookup = dict(zip(list('ABCDEFGHIKLMNPQRSTVWXYZ'),\
-                                    list('ABCDEFGHIKLMNPQRSTVWXYZ')))
+    _abbreviation_lookup = dict(list(zip(list('ABCDEFGHIKLMNPQRSTVWXYZ'),\
+                                    list('ABCDEFGHIKLMNPQRSTVWXYZ'))))
     _abbreviation_lookup.update(amino_acid_three_to_one_letter_map)
     _abbreviation_lookup.update(amino_acid_name_to_one_letter_map)
 
@@ -166,13 +166,12 @@ class PointMutation(Mutation):
         except AttributeError:
                 # if residue cannot be converted to uppercase, it is not a 
                 # string, so raise an error
-                raise MutationError, 'Residue must be a string'
+                raise MutationError('Residue must be a string')
         except KeyError:
                 # if residue is not a key in self._abbreviation_lookup, it
                 # it is not a standard amino acid residue, so raise an error
-                raise MutationError, \
-                 'Input residue not recognized, must be a standard residue: '\
-                  + residue
+                raise MutationError('Input residue not recognized, must be a standard residue: '\
+                  + residue)
 
     def _get_wt_residue(self):
         return self.__wt_residue
@@ -224,7 +223,7 @@ def PointMutation_from_wNm(wNm):
     try:
         return PointMutation(int(wNm[1:-1]),wNm[0],wNm[-1])
     except ValueError:
-        raise MutationError, 'Improperly formatted mutation mention:  ' + wNm
+        raise MutationError('Improperly formatted mutation mention:  ' + wNm)
 #######
 
 class MutationExtractor(object):
@@ -249,17 +248,17 @@ class BaselineMutationExtractor(MutationExtractor):
 
 
     # MuteXt matches amino acid single letter abbreviations in uppercase
-    single_letter_match = r''.join(amino_acid_three_to_one_letter_map.values())
+    single_letter_match = r''.join(list(amino_acid_three_to_one_letter_map.values()))
     # MuteXt only matches amino acid three letter abbreviations in titlecase
     # (i.e. first letter in uppercase, all others in lowercase)
     triple_letter_match = r'|'.join(\
-        [aa.title() for aa in amino_acid_three_to_one_letter_map.keys()])
+        [aa.title() for aa in list(amino_acid_three_to_one_letter_map.keys())])
     # The MuteXt paper doesn't speicfy what cases are used for matching full 
     # residue mentions. We allow lowercase or titlecase for maximum recall --
     # precision seems unlikely to be affected by this.
     full_name_match = r'|'.join(\
-        [aa.lower() for aa in amino_acid_name_to_one_letter_map.keys()] +\
-        [aa.title() for aa in amino_acid_name_to_one_letter_map.keys()])
+        [aa.lower() for aa in list(amino_acid_name_to_one_letter_map.keys())] +\
+        [aa.title() for aa in list(amino_acid_name_to_one_letter_map.keys())])
 
     single_wt_res_match = \
            r''.join([r'(?P<wt_res>[',single_letter_match,r'])'])
@@ -438,7 +437,7 @@ class MutationFinder(MutationExtractor):
 
         """
 
-        for mutation in mutations.keys():
+        for mutation in list(mutations.keys()):
             if mutation.WtResidue == mutation.MutResidue:
                 del mutations[mutation]
 
@@ -565,11 +564,11 @@ def mutation_finder_from_regex_filepath(\
     try:
         regular_expressions_file = open(regular_expression_filepath)
     except IOError:
-        print 'Can not open the regular expression file:', \
-            regular_expression_filepath
-        print 'If using the default regular expression file and you are running',\
+        print('Can not open the regular expression file:', \
+            regular_expression_filepath)
+        print('If using the default regular expression file and you are running',\
             'mutation finder from a directory other than where it is insalled,',\
-            'be sure to set the mutation_finder_home variable in mutation_finder.py'
+            'be sure to set the mutation_finder_home variable in mutation_finder.py')
         exit(-1)
     
     regular_expressions = []
@@ -630,8 +629,8 @@ def extract_mutations_from_lines_to_dict(lines,\
         return result
     # If spans are not requested, replace the span lists with counts
     else:
-        for id, mutations in result.items():
-            for mutation,value in mutations.items():
+        for id, mutations in list(result.items()):
+            for mutation,value in list(mutations.items()):
                 try:
                     # Value is a list of spans
                     result[id][mutation] = len(value)
@@ -696,7 +695,7 @@ def extract_mutations_from_lines_to_file(lines,output_filepath,\
             # If we're only printing out the normalized mutations, this is 
             # easy. Generate a list of each mutation, and append them to 
             # output_fields.
-            output_fields += map(str,dict(mutations).keys())
+            output_fields += list(map(str,list(dict(mutations).keys())))
         else:
             # Iterate over the mutations and their values -- note that for 
             # MutationExtractors which support spans, value will be equal
@@ -704,7 +703,7 @@ def extract_mutations_from_lines_to_file(lines,output_filepath,\
             # MutationExtractors which don't support spans 
             # (e.g. BaselineMutationExtractor) value will be the count of the
             # mentions. 
-            for mutation,value in mutations.items():
+            for mutation,value in list(mutations.items()):
                 if store_spans:
                     try:
                     # Write the current mutation and its spans
@@ -715,9 +714,8 @@ def extract_mutations_from_lines_to_file(lines,output_filepath,\
                     # store spans from a MutationExtractor which does not support 
                     # spans
                     except TypeError:
-                        raise MutationFinderError,\
-                         'Attempting to access spans from a MutationExtractor ' +\
-                         'which cannot store them.'
+                        raise MutationFinderError('Attempting to access spans from a MutationExtractor ' +\
+                         'which cannot store them.')
                 else:
                     # For MutationExtractors which support spans, determine the
                     # number of mentions by counting the spans. Write the 
@@ -760,8 +758,7 @@ def build_output_filepath(output_dir,input_filepath):
             ''.join([filename_from_filepath(input_filepath),'.',\
                 mutation_finder_output_file_extension])
     else:
-        raise MutationFinderError,\
-            'Must pass non-empty input filepath to construct output filename'
+        raise MutationFinderError('Must pass non-empty input filepath to construct output filename')
 
     if output_dir.endswith('/'):
         join_text = ''
@@ -788,14 +785,14 @@ if __name__ == "__main__":
         try:
             input_file = open(input_filepath)
         except IOError:
-            print 'Can not open specified input file: ', input_filepath
+            print('Can not open specified input file: ', input_filepath)
             exit(1)
 
         #output_filepath = build_output_filepath(opts.output_dir,input_filepath)
            
         for row in extract_mutations_from_lines_to_file(input_file,None,\
             mutation_extractor,opts.store_spans,opts.output_normalized_mutations):
-            print row
+            print(row)
     
     # All done, exit cleanly
     exit(0)
@@ -813,7 +810,7 @@ blackList = set(["E24377A"])
 def annotateFile(article, file):
     text = file.content
     rows = []
-    for mut, spans in mutFinder(text).iteritems():
+    for mut, spans in mutFinder(text).items():
         #print repr(mutations)
         for start, end in spans:
             #print str(mut)

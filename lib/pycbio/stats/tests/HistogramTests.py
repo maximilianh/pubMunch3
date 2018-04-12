@@ -18,7 +18,7 @@ class HistoTests(TestCaseBase):
     def testNumBins(self):
         h = Histogram([-1.0, 1.0], numBins=2)
         bins = h.build()
-        self.failUnlessEqual(self.__getBinsInfo(bins),
+        self.assertEqual(self.__getBinsInfo(bins),
                              [(0, -2.0, 0.0, 2.0, 1, 0.0),
                               (1, 0.0, 2.0, 2.0, 1, 0.0)])
 
@@ -27,7 +27,7 @@ class HistoTests(TestCaseBase):
         h = Histogram([-1.0, 1.0], binSize=1)
         h.dump(sys.stdout)
         bins = h.build()
-        self.failUnlessEqual(self.__getBinsInfo(bins),
+        self.assertEqual(self.__getBinsInfo(bins),
                              [(0, -2.0, 0.0, 2.0, 1, 0.0),
                               (1, 0.0, 2.0, 2.0, 1, 0.0)])
 

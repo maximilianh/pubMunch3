@@ -1,4 +1,4 @@
-import logging, re, sys, pubAlg, util, urlparse
+import logging, re, sys, pubAlg, util, urllib.parse
 import unidecode  # to map spec characters to ASCII text (ucsc browser doesn't support unicode)
 from pubAlg import *
 import pubCompare
@@ -61,7 +61,7 @@ class UnifyAuthors:
         " given the article data, return the first author family name, as ASCII "
         nonLetterRe = re.compile('\W', re.U) # non-alphanumeric character in unicode set, uff.
         firstAuthor=articleData.authors.split(";")[0].split(",")[0].replace(" ","")
-        assert(type(firstAuthor)==types.UnicodeType)
+        assert(type(firstAuthor)==str)
         if firstAuthor=="":
             #firstAuthor=articleData.externalId
             firstAuthor="NoAuthor"
@@ -144,7 +144,7 @@ def urlToDesc(url):
     >>> urlToDesc("http://faqs.org")
     'faqs.org'
     """
-    host, path = urlparse.urlparse(url)[1:3]
+    host, path = urllib.parse.urlparse(url)[1:3]
     if len(host)>10:
         if len(host)<17:
             return host
@@ -200,7 +200,7 @@ class GetFileDesc:
 
         elif docId.startswith("a"):
             row = valList[0]
-            line = docId.strip("a")+"\t"+u'\t'.join(row)+"\n"
+            line = docId.strip("a")+"\t"+'\t'.join(row)+"\n"
             logging.debug("Writing %s" % line)
             self.artFh.write(line.encode('utf8'))
         else:

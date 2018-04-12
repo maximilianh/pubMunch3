@@ -12,6 +12,6 @@ for line in open("authors.txt"):
             continue
         counter[n] += 1
 
-for name, count in counter.iteritems():
+for name, count in counter.items():
     row = [ name, str(count), str(len(name))]
-    print "\t".join(row)
+    print("\t".join(row))

@@ -185,12 +185,12 @@ class WordPmids():
         self.outFname = paramDict["outFname"]
 
     def combine(self, data, partDict):
-        for word, pmidList in partDict.iteritems():
+        for word, pmidList in partDict.items():
             self.data.setdefault(word, []).extend(pmidList)
 
     def combineCleanup(self, data):
         delWords = []
-        for word, pmidList in self.data.iteritems():
+        for word, pmidList in self.data.items():
             if len(pmidList)<5:
                 delWords.append(word)
 
@@ -213,7 +213,7 @@ class SvmlWriter():
         self.onlyMain=True
 
     def setup(self, paramDict):
-        dbList = paramDict['dbWords'].keys()
+        dbList = list(paramDict['dbWords'].keys())
         self.outTypes = []
         self.outTypes.append("docIds")
         for db in dbList:
@@ -227,7 +227,7 @@ class SvmlWriter():
         # create lookups dicts:
         # 1) dict db -> word -> index 
         # 2) dict db -> list of words (right order, so no need to sort)
-        for db, bestWords in bestWordDict.iteritems():
+        for db, bestWords in bestWordDict.items():
             self.bestWords[db] = bestWords
             self.bestWordsSet[db] = set(bestWords)
             dbWordsToIdx = {}
@@ -241,7 +241,7 @@ class SvmlWriter():
         self.outFiles = outFiles
         # write headers
         docHeaders = ["articleId", "extId", "pmid"]
-        for key, fh in self.outFiles.iteritems():
+        for key, fh in self.outFiles.items():
             if key.endswith("docIds"):
                 fh.write("\t".join(docHeaders)+"\n")
 
@@ -255,7 +255,7 @@ class SvmlWriter():
 
         self.outFiles["docIds"].write("%s\t%s\t%s\n" % \
             (article.articleId, article.externalId, article.pmid))
-        for db, dbBestWords in self.bestWords.iteritems():
+        for db, dbBestWords in self.bestWords.items():
             # get relevant words in document
             goodWords = self.bestWordsSet[db].intersection(counts)
 
@@ -276,7 +276,7 @@ class SvmlWriter():
         modelDir = self.modelDir
 
         # run svml on all output svml files
-        for ftype, svmlFile in self.outFiles.iteritems():
+        for ftype, svmlFile in self.outFiles.items():
             if not ftype.endswith(".svml"):
                 continue
             svmlFile.close()

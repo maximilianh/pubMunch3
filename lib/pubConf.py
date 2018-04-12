@@ -12,8 +12,8 @@ if confName is None:
     confName = expanduser("~/.pubConf")
 newVars = {}
 if isfile(confName):
-    execfile(confName, {}, newVars)
-    for key, value in newVars.iteritems():
+    exec(compile(open(confName).read(), confName, 'exec'), {}, newVars)
+    for key, value in newVars.items():
         locals()[key] = value
 
 # GENERAL SETTINGS   ================================================
@@ -596,7 +596,7 @@ bncFname = '/hive/data/outside/pubs/wordFrequency/bnc/bnc.txt'
 
 # now overwrite all variables with those defined in local 
 # config file ( see start of this file )
-for key, value in newVars.iteritems():
+for key, value in newVars.items():
     locals()[key] = value
 
 # SOLR =======

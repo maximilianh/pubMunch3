@@ -328,7 +328,7 @@ def findProteins(text, blacklist, classifier, docId=""):
             # in case that we run into a genbank/uniprot supplemental table, skip the whole doc
             if seqCount > MAXSEQPERDOC:
                 logging.warn("%d proteins, too many, in document %s, skipping whole document" % (seqCount, docId))
-                logging.warn("%s" % seqRows.keys())
+                logging.warn("%s" % list(seqRows.keys()))
                 return []
 
     # process last stack
@@ -340,7 +340,7 @@ def findProteins(text, blacklist, classifier, docId=""):
 
     # post-processing: remove too common seqs
     cleanRows = []
-    for seq, rows in seqRows.iteritems():
+    for seq, rows in seqRows.items():
         if len(rows)>MAXSEQOCC:
             logging.debug("Seq %s seen more than %d times, skipping this whole sequence" % (seq, len(rows)))
         else:

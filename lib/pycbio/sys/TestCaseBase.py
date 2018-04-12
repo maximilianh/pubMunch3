@@ -95,9 +95,9 @@ class TestCaseBase(unittest.TestCase):
         diff = difflib.unified_diff(expLines, outLines, expFile, outFile)
         cnt = 0
         for l in diff:
-            print l,
+            print(l, end=' ')
             cnt += 1
-        self.failUnless(cnt == 0)
+        self.assertTrue(cnt == 0)
 
     def createOutputFile(self, ext, contents=""):
         """create an output file, filling it with contents."""
@@ -114,13 +114,13 @@ class TestCaseBase(unittest.TestCase):
         compare to the expected contents of the file."""
         fpath = self.getOutputFile(ext)
         self.mustExist(fpath)
-        self.failUnless(os.path.isfile(fpath))
+        self.assertTrue(os.path.isfile(fpath))
         fh = open(fpath)
         try:
             got = fh.read()
         finally:
             fh.close()
-        self.failUnlessEqual(got, expectContents)
+        self.assertEqual(got, expectContents)
 
     @staticmethod
     def numRunningThreads():
@@ -133,14 +133,14 @@ class TestCaseBase(unittest.TestCase):
 
     def failIfMultipleThreads(self):
         "fail if more than one thread is running"
-        self.failUnlessEqual(self.numRunningThreads(), 1)
+        self.assertEqual(self.numRunningThreads(), 1)
 
     def failIfChildProcs(self):
         "fail if there are any running or zombie child process"
         e = None
         try:
             s = os.waitpid(0, os.WNOHANG)
-        except OSError, e:
+        except OSError as e:
             if e.errno != errno.ECHILD:
                 raise
         if e == None:
@@ -150,7 +150,7 @@ class TestCaseBase(unittest.TestCase):
     def numOpenFiles():
         "count the number of open files"
         n = 0
-        for fd in xrange(0, MAXFD):
+        for fd in range(0, MAXFD):
             try:
                 os.fstat(fd)
             except:
@@ -168,8 +168,7 @@ class TestCaseBase(unittest.TestCase):
            operator.
         """
         if not re.match(expectRe, str(obj), re.DOTALL):
-            raise self.failureException, \
-                  (msg or "'%s' does not match '%s'" % (str(obj), expectRe))
+            raise self.failureException(msg or "'%s' does not match '%s'" % (str(obj), expectRe))
 
     def __logCmd(self, cmd):
         cmdStrs = [quote(a) for a in cmd]

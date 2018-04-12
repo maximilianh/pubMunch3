@@ -103,12 +103,12 @@ class PipelineTests(TestCaseBase):
         e = None
         try:
             pl.wait()
-        except ProcException, e:
+        except ProcException as e:
             pass
-        self.failUnless(e != None)
+        self.assertTrue(e != None)
         # FIXME: should Procline keep an ordered list?
         for p in pl.procs:
-            self.failUnless(p.returncode == 1)
+            self.assertTrue(p.returncode == 1)
 
     def testSigPipe(self):
         "test not reading all of pipe output"

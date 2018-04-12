@@ -38,6 +38,6 @@ for row in iterTsvRows("authors.txt"):
             if len(firstLetters - protLetters)==0 and len(first)>5:
                 names[first]+=1
 
-for fn, count in names.iteritems():
+for fn, count in names.items():
     if count>2:
-        print fn
+        print(fn)

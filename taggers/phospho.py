@@ -32,7 +32,7 @@ def startup(paramDict):
     #seqCache = gdbm.open(seqCacheFname, "w")
 
 def findMatches(reDict, text):
-    for reType, reObj in reDict.iteritems():
+    for reType, reObj in reDict.items():
         for match in reObj.finditer(text):
             yield reType, match
 
