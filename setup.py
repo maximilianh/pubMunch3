@@ -19,7 +19,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'download_pmid=pubMunch:download_pmid',
+            'download_pmid=pubMunch:download_pmid_program',
         ],
     },
 )
