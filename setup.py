@@ -14,6 +14,7 @@ setup(
         'beautifulsoup4==4.6',
         'unidecode==1.0.22',
         'incapsula-cracker-py3==0.1.8.1',
+        'html5lib==1.0.1'
     ],
 
     entry_points={

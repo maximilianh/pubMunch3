@@ -19,13 +19,6 @@ except ImportError:
 
 from . import pubGeneric, pubConf, maxCommon, unicodeConvert, maxTables, pubPubmed
 
-try:
-    import Bio.bgzf
-    bgzfLoaded = True
-except ImportError:
-    logging.warn("biopython not installed (use: pip install biopython, apt-get install python-biopython, yum install python-biopython")
-    bgzfLoaded = False
-
 from os.path import *
 from collections import namedtuple
 

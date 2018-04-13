@@ -28,7 +28,6 @@ from .scihub import scihub
 
 import chardet # guessing encoding, ported from firefox
 import unidecode # library for converting to ASCII, ported from perl
-#from incapsula import crack # work around bot-detection on karger.com
 import incapsula
 logging.getLogger('requests.packages.urllib3.connectionpool').setLevel(logging.WARNING)
 
@@ -52,7 +51,6 @@ from bs4 import BeautifulSoup, SoupStrainer, BeautifulStoneSoup # parsing of non
 import xml.etree.ElementTree as etree
 import xml.etree.ElementTree
 
-PUBLOCKFNAME = "_pubCrawl.lock"
 # ===== GLOBALS ======
 
 # for each ISSN
@@ -137,9 +135,6 @@ crawlDelays.update(pubConf.crawlDelays)
 defaultDelay = 10
 # can be set from outside to force all delays to one fixed number of secs
 forceDelay = -1
-
-# filenames of lockfiles
-lockFnames = []
 
 # http page cache, to avoid duplicate downloads
 webCache = {}
@@ -587,7 +582,7 @@ def htmlExtractPart(page, tag, attrs):
     bs = page["parsedHtml"]
     el = bs.find(tag, attrs=attrs)
     if el!=None:
-        return str(el)
+        return str(el).encode('utf8')
     else:
         logging.debug("Could not strip html")
         return page["data"]
@@ -678,7 +673,7 @@ def parseHtmlLinks(page, canBeOffsite=False, landingPage_ignoreUrlREs=[]):
     logging.log(5, "Parsing %s with bs3" % page["url"])
     linkStrainer = SoupStrainer(['a', 'meta', 'iframe', 'frame']) # to speed up parsing
     try:
-        fulltextLinks = BeautifulSoup(htmlString, "html5lib")
+        fulltextLinks = BeautifulSoup(htmlString, "html5lib").find_all(linkStrainer)
     except ValueError as e:
         raise pubGetError("Exception during bs html parse", "htmlParseException", e.message)
     except TypeError as e:
@@ -839,66 +834,6 @@ def wait(delaySec, host="default"):
 
     lastCallSec[host] = time.time()
 
-#def iterateNewPmids(pmids, ignorePmids):
-    #""" yield all pmids that are not in ignorePmids """
-    #ignorePmidCount = 0
-#
-    #ignorePmids = set([int(p) for p in ignorePmids])
-    #pmids = set([int(p) for p in pmids])
-    #todoPmids = pmids - ignorePmids
-    ##todoPmids = list(todoPmids)
-    #random.shuffle(todoPmids) # to distribute error messages
-
-    #logging.debug("Skipped %d PMIDs" % (len(pmids)-len(todoPmids)))
-    #for pmidPos, pmid in enumerate(todoPmids):
-        #logging.debug("%d more PMIDs to go" % (len(todoPmids)-pmidPos))
-        #yield str(pmid)
-
-    #if ignorePmidCount!=0:
-        #logging.debug("Skipped %d PMIDs" % ignorePmidCount)
-
-def readLocalMedline(pmid):
-    " returns a dict with info we have locally about PMID, None if not found "
-    logging.debug("Trying PMID lookup with local medline copy")
-    medlineDb = pubStore.getArtDbPath("medline")
-    if not isfile(medlineDb):
-        logging.debug("%s does not exist, no local medline lookups" % medlineDb)
-        return None
-
-    con, cur = maxTables.openSqlite(medlineDb)
-    con.row_factory = sqlite3.Row
-    cur = con.cursor()
-
-    rows = None
-    tryCount = 60
-
-    while rows==None and tryCount>0:
-        try:
-            rows = list(cur.execute("SELECT * from articles where pmid=?", (pmid,)))
-        except sqlite3.OperationalError:
-            logging.info("Database is locked, waiting for 60 secs")
-            time.sleep(60)
-            tryCount -= 1
-
-    if rows==None:
-        raise Exception("Medline database was locked for more than 60 minutes")
-
-    if len(rows)==0:
-        logging.info("No info in local medline for PMID %s" % pmid)
-        return None
-
-    # the last entry should be the newest one
-    lastRow = rows[-1]
-
-    # convert sqlite results to dict
-    result = {}
-    for key, val in zip(list(lastRow.keys()), lastRow):
-        result[key] = str(val)
-
-    result["source"] = ""
-    result["origFile"] = ""
-    return result
-
 def downloadPubmedMeta(pmid):
     """ wrapper around pubPubmed that converts exceptions"""
     try:
@@ -1053,30 +988,6 @@ def writeDocIdStatus(outDir, pmid, status, msg="", crawler="", journal="", year=
         row = [pmid, status, msg, crawler, journal, year, numFiles, detail]
         outFh.write("\t".join([fixCol(c) for c in row]) + "\n")
 
-def removeLocks():
-    " remove all lock files "
-    global lockFnames
-    for lockFname in lockFnames:
-        if isfile(lockFname):
-            logging.debug("Removing lockfile %s" % lockFname)
-            os.remove(lockFname)
-    lockFnames = []
-
-def getLockFname(outDir):
-    return join(outDir, PUBLOCKFNAME)
-
-def checkCreateLock(outDir):
-    " creates lockfile, squeaks if exists, register exit handler to delete "
-    global lockFnames
-    lockFname = join(outDir, PUBLOCKFNAME)
-    if isfile(lockFname):
-        raise Exception("File %s exists - it seems that a crawl is running now. \
-        If you're sure that this is not the case, remove the lockfile and retry again" % lockFname)
-    logging.debug("Creating lockfile %s" % lockFname)
-    open(lockFname, "w")
-    lockFnames.append(lockFname)
-    atexit.register(removeLocks) # register handler that is executed on program exit
-
 def parseDocIds(outDir):
     " parse docIds.txt in outDir and return as list, ignore duplicates "
     docIdFname1 = join(outDir, "docIds.txt")
@@ -1112,14 +1023,6 @@ def parseDocIds(outDir):
 def ignoreCtrlc(signum, frame):
     logging.info('Signal handler called with signal %s' % str (signum))
 
-def printPaperData(paperData, artMeta):
-    " output summary info of paper data obtained, for testing "
-    if paperData==None:
-        logging.info("No data received from crawler")
-        return
-
-    printFileHash(paperData, artMeta)
-
 def isPdf(page):
     " true if page is really a PDF file "
     return page["data"][:4]==b"%PDF"
@@ -1145,129 +1048,6 @@ def isPdfUrl(url):
         return False
     ext = os.path.splitext(p.path)[1]
     return ext.lower() == '.pdf'
-
-def writeFilesToDisk(pmid, metaData, fulltextData, outDir):
-    """ write files from dict (keys like main.html or main.pdf or s1.pdf, value is binary data)
-    to directory <outDir>/files
-    """
-    warnMsgs = []
-    fileDir = join(outDir, "files")
-    if not isdir(fileDir):
-        os.makedirs(fileDir)
-
-    suppFnames = []
-    suppUrls = []
-    pdfFound = False
-    for suffix, pageDict in fulltextData.items():
-        if suffix in ["status", "crawlerName"]:
-            continue
-        if suffix=="landingPage":
-            metaData["landingUrl"] = pageDict["url"]
-            continue
-
-        filename = pmid+"."+suffix
-
-        warnMinSize = 5000
-        if len(pageDict["data"]) < warnMinSize:
-            warnMsgs.append("%s is smaller than %d bytes" % (suffix, warnMinSize))
-
-        if suffix=="main.html":
-            if b"<html" in pageDict["data"]:
-                warnMsgs.append("main.html contains html tag")
-            metaData["mainHtmlFile"] = filename
-            metaData["mainHtmlUrl"] = pageDict["url"]
-
-        elif suffix=="main.pdf":
-            pdfFound = True
-
-            # tandf and some others send two content-types but the requests module
-            # and curl return only the first type. Accept anything that looks like a PDF
-            # file
-            mustBePdf(pageDict, metaData)
-
-            metaData["mainPdfFile"] = filename
-            metaData["mainPdfUrl"] = pageDict["url"]
-
-        elif suffix.startswith("S"):
-            suppFnames.append(filename)
-            suppUrls.append(pageDict["url"])
-
-        fileData = pageDict["data"]
-
-        filePath = join(fileDir, filename)
-        logging.debug("Writing file %s" % filePath)
-        fh = open(filePath, "wb")
-        fh.write(fileData)
-        fh.close()
-
-    if not pdfFound:
-        warnMsgs.append("No PDF file")
-
-    # "," in urls? this happened 2 times in 1 million files
-    suppFnames = [s.replace(",", "") for s in suppFnames]
-    suppFnames = [s.replace("\t", "") for s in suppFnames]
-    suppUrls = [s.replace(",", "") for s in suppUrls]
-    suppUrls = [s.replace("\t", "") for s in suppUrls]
-
-    metaData["suppFiles"] = ",".join(suppFnames)
-    metaData["suppUrls"] = ",".join(suppUrls)
-
-    return metaData, warnMsgs
-
-def printFileHash(fulltextData, artMeta):
-    " output a table with file extension and SHA1 of all files "
-    crawlerName = fulltextData["crawlerName"]
-    for ext, page in fulltextData.items():
-        if ext in ["crawlerName", "status"]:
-            continue
-        if ext=="main.pdf":
-            mustBePdf(page, artMeta)
-        sha1 = hashlib.sha1(page["data"]).hexdigest() # pylint: disable=E1101
-        row = [crawlerName, ext, page["url"], str(len(page["data"])), sha1]
-        print("\t".join(row))
-
-def writePaperData(docId, pubmedMeta, fulltextData, outDir):
-    " write all paper data to status and fulltext output files in outDir "
-    if TEST_OUTPUT:
-        printFileHash(fulltextData, pubmedMeta)
-        return
-
-    pubmedMeta, warnMsgs = writeFilesToDisk(docId, pubmedMeta, fulltextData, outDir)
-
-    oldHandler = signal.signal(signal.SIGINT, ignoreCtrlc) # deact ctrl-c during write
-
-    writeMeta(outDir, pubmedMeta, fulltextData)
-    addStatus = ""
-    if "status" in fulltextData:
-        addStatus = fulltextData["status"]
-    crawlerName = fulltextData["crawlerName"]
-
-    writeDocIdStatus(outDir, docId, "OK", msg="; ".join(warnMsgs),
-                     crawler=crawlerName,
-                     journal=pubmedMeta["journal"],
-                     year=pubmedMeta["year"],
-                     numFiles=len(fulltextData),
-                     detail=addStatus)
-
-    signal.signal(signal.SIGINT, oldHandler) # react ctrl c handler
-
-def parseIdStatus(fname):
-    " parse crawling status file, return as dict status -> count "
-    res = {}
-    if not os.path.isfile(fname):
-        logging.info("%s does not exist" % fname)
-        res["OK"] = []
-        return res
-
-    for line in open(fname):
-        pmid, status = line.strip().split()[:2]
-        status = status.split("\\")[0]
-        status = status.strip('"')
-        status = status.strip("'")
-        res.setdefault(status, [])
-        pmid = int(pmid)
-        res[status].append(pmid)
-    return res
 
 # temporarily pulling this in from pubCrawlConf
 
@@ -1302,63 +1082,6 @@ crawlPubIds = {
 "NLM Informa Healthcare" : "informa"
 #"Society for Molecular Biology and Evolution" : "smbe"
 }
-
-def writeReport(baseDir, htmlFname):
-    " parse pmids.txt and pmidStatus.tab and write a html report to htmlFname "
-    h = htmlPrint.htmlWriter(htmlFname)
-    h.head("Genocoding crawler status", stylesheet="bootstrap/css/bootstrap.css")
-    h.startBody("Crawler status as of %s" % time.asctime())
-
-    publDesc = {}
-    for key, value in crawlPubIds.items():
-        publDesc[value] = key
-
-    totalPmidCount = 0
-    totalOkCount = 0
-    totalDownCount = 0
-
-
-    for name in os.listdir(baseDir):
-        dirName = join(baseDir, name)
-        if not isdir(dirName) or name.startswith("_"):
-            continue
-        logging.info("processing dir %s" % name)
-        pmidFile = join(dirName, "pmids.txt")
-        if not isfile(pmidFile):
-            continue
-        pmidCount = len(open(pmidFile).readlines())
-        issnCount = len(open(join(dirName, "issns.tab")).readlines())
-        statusPmids = parseIdStatus(join(dirName, "pmidStatus.tab"))
-        publisher = basename(dirName)
-        isActive = isfile(join(dirName, PUBLOCKFNAME))
-        totalPmidCount += pmidCount
-        totalOkCount  += len(statusPmids.get("OK", []))
-        totalDownCount  += len(list(statusPmids.values()))
-
-        if publisher in publDesc:
-            h.h4("Publisher: %s (%s)" % (publDesc[publisher], publisher))
-        else:
-            h.h4("Publisher: %s (%s)" % (publisher, publisher))
-        h.startUl()
-        h.li("Crawler is currently running: %s" % isActive)
-        h.li("Number of journals: %d" % issnCount)
-        h.li("Total PMIDs scheduled: %d" % pmidCount)
-        h.li("Crawler progress rate: %0.2f %%" % (100*len(statusPmids.get("OK", ""))/float(pmidCount)))
-        h.startUl()
-        for status, pmidList in statusPmids.items():
-            exampleLinks = [htmlPrint.pubmedLink(pmid) for pmid in pmidList[:10]]
-            #if status=="OK":
-                #exampleLinkStr = ""
-            #else:
-            exampleLinkStr = "&nbsp;&nbsp; (examples: %s, ...)" % ",".join(exampleLinks)
-            h.li("Status %s: %d %s" % (status, len(pmidList), exampleLinkStr))
-        h.endUl()
-        h.endUl()
-
-    h.h4("Total PMIDs scheduled to download: %d" % totalPmidCount)
-    h.h4("Overall PMID download tried: %d" % totalDownCount)
-    h.h4("Overall PMIDs downloaded successfully: %d" % totalOkCount)
-    h.endHtml()
 
 def getIssn(artMeta):
     " get the eIssn or the pIssn, prefer eIssn "
@@ -1458,49 +1181,6 @@ class Crawler():
         """
         return None
 
-def parseDirectories(srcDirs):
-    """
-    iterates over all directories and collects data from
-    docIds.txt, issns.tab, crawler.txt, pmidStatus.tab and issnStatus.tab
-
-    return a two-tuple:
-    a list of (docId, outDir) from all outDirs
-    a set of issns to skip
-    """
-    allDocIds = [] # a list of tuples (docId, outDir)
-    ignoreIssns = [] # list of ISSNs to ignore when crawling
-    seenIds = set()
-    for srcDir in srcDirs:
-        # do some basic checks on outDir
-        if not isdir(srcDir):
-           continue
-        if isfile(getLockFname(srcDir)):
-           logging.warn("%s exists. Looks like a crawl is going on in %s. Skipping." \
-                   % (getLockFname(srcDir), srcDir))
-           continue
-
-        dirDocIds = parseDocIds(srcDir)
-        if dirDocIds==None:
-            logging.info("Found no document IDs in directory %s" % srcDir)
-            continue
-
-        doneIds = set(parseDocIdStatus(srcDir))
-        count = 0
-        for docId in dirDocIds:
-            if docId in seenIds or docId in doneIds:
-                continue
-            assert(not docId.startswith("0")) # PMIDs cannot start with 0
-            seenIds.add(docId)
-            allDocIds.append( (docId, srcDir) )
-            count += 1
-
-        ignoreIssns.extend(parseIssnStatus(srcDir))
-        logging.info("Directory %s: %d docIds to crawl" % (srcDir, count))
-
-    logging.info("Found %d docIds to crawl, %d ISSNs to ignore in %d directories" % (len(allDocIds), len(ignoreIssns), len(srcDirs)))
-    return allDocIds, ignoreIssns
-
-
 def findLinksByText(page, searchRe):
     " parse html page and return URLs in links with matches to given compiled re pattern"
     urls = []
@@ -1523,11 +1203,11 @@ def findLinksWithUrlPart(page, searchText, canBeOffsite=False):
     page = parseHtmlLinks(page, canBeOffsite=canBeOffsite)
     for linkUrl, linkText in page["links"].items():
         dbgStr = "Checking link Url '%s', url %s, against %s" % \
-            (unidecode.unidecode(linkText), linkUrl, searchText)
+            (linkText, linkUrl, searchText)
         logging.log(5, dbgStr)
         if searchText in linkUrl:
             urls.append(linkUrl)
-            logging.debug('Found link: %s -> %s' % (repr(linkText.decode("utf8")), repr(linkUrl.decode('utf8'))))
+            logging.debug('Found link: %s -> %s' % (repr(linkText), repr(linkUrl)))
     if len(urls)!=0:
         logging.debug("Found links with %s in URL: %s" % (repr(searchText), urls))
     else:
@@ -1746,7 +1426,7 @@ class PmcCrawler(Crawler):
         url = url.rstrip("/")
         delayTime = 5
         htmlPage = httpGetDelay(url, delayTime)
-        waitText = "This article has a delayed release (embargo) and will be available in PMC on"
+        waitText = b"This article has a delayed release (embargo) and will be available in PMC on"
         if waitText in htmlPage["data"]:
             logging.warn("PMC embargo note found")
             return None
@@ -1754,7 +1434,7 @@ class PmcCrawler(Crawler):
         paperData = OrderedDict()
 
         # strip the navigation elements from the html
-        html = htmlPage["data"].replace('xmlns="http://www.w3.org/1999/xhtml"', '')
+        html = htmlPage["data"].replace(b'xmlns="http://www.w3.org/1999/xhtml"', b'')
         try:
             root = etree.fromstring(html)
         except xml.etree.ElementTree.ParseError:
@@ -1826,13 +1506,13 @@ class NpgCrawler(Crawler):
         lines = htmlStr.splitlines()
         start, end = 0,0
         for i, line in enumerate(lines):
-            if "<article>" in line and start!=0:
+            if b"<article>" in line and start!=0:
                 start = i
-            if "</article>" in line and end!=0:
+            if b"</article>" in line and end!=0:
                 end = i
         if start!=0 and end!=0 and end > start and end-start > 10 and end < len(lines):
             logging.log(5, "stripping some extra html")
-            return "".join(lines[start:end+1])
+            return b"".join(lines[start:end+1])
         else:
             return htmlStr
 
@@ -1869,13 +1549,11 @@ class NpgCrawler(Crawler):
         pdfUrl = getMetaPdfUrl(htmlPage)
         if pdfUrl is None:
             url = htmlPage["url"].rstrip("/")
-            if "data-sixpack-client" in origHtml:
+            if b"data-sixpack-client" in origHtml:
                 # Scientific Reports have a different URL structure
-                logging.debug("Found a new-style NPG page")
                 pdfUrl = url+".pdf"
             else:
                 pdfUrl = url.replace("/full/", "/pdf/").replace(".html", ".pdf")
-
         pdfPage = httpGetDelay(pdfUrl, delayTime)
         paperData["main.pdf"] = pdfPage
 
@@ -2152,7 +1830,7 @@ class HighwireCrawler(Crawler):
             raise pubGetError("Highwire invalid DOI", "highwireInvalidUrl")
 
         isDrupal = False
-        if htmlPage["mimeType"] != "application/pdf" and not htmlPage["data"].startswith("%PDF"):
+        if htmlPage["mimeType"] != b"application/pdf" and not htmlPage["data"].startswith(b"%PDF"):
             aaasStr = "The content you requested is not included in your institutional subscription"
             aacrStr = "Purchase Short-Term Access"
             stopWords = [aaasStr, aacrStr]
@@ -2170,7 +1848,7 @@ class HighwireCrawler(Crawler):
             # highwire has at least two generators: a new one based on drupal and their older
             # in-house one
             isDrupal = False
-            if "drupal.org" in htmlPage["data"]:
+            if b"drupal.org" in htmlPage["data"]:
                 logging.debug("Drupal-Highwire detected")
                 isDrupal = True
 
@@ -2181,7 +1859,7 @@ class HighwireCrawler(Crawler):
 
         # check if we have a review process file, EMBO journals
         # e.g. http://emboj.embopress.org/content/early/2015/03/31/embj.201490819
-        if "Transparent Process" in htmlPage["data"]:
+        if b"Transparent Process" in htmlPage["data"]:
             reviewUrl = url.replace(".long","")+".reviewer-comments.pdf"
             logging.debug("Downloading review process file")
             reviewPage = httpGetDelay(reviewUrl, delayTime)
@@ -2205,7 +1883,7 @@ class HighwireCrawler(Crawler):
         else:
             htmlPage['data'] = htmlExtractPart(htmlPage, 'div', {'id': 'content-block'})
 
-        htmlPage['data'] = stripOutsideOfTags(htmlPage['data'], 'highwire-journal-article-marker-start', 'highwire-journal-article-marker-end')
+        htmlPage['data'] = stripOutsideOfTags(htmlPage['data'], b'highwire-journal-article-marker-start', b'highwire-journal-article-marker-end')
 
         # get the supplemental files
         suppListUrl = url.replace(".long", "/suppl/DC1")
@@ -2256,7 +1934,7 @@ class NejmCrawler(Crawler):
 
         # strip the navigation elements from the html
         html = htmlPage["data"]
-        bs = BeautifulSoup(html)
+        bs = BeautifulSoup(html, "html5lib")
         mainCont = bs.find("div", id='content')
         if mainCont!=None:
             htmlPage["data"] = str(mainCont)
@@ -2331,16 +2009,16 @@ class WileyCrawler(Crawler):
         # try to get the fulltext html
         mainUrl = absUrl.replace("/abstract", "/full")
         mainPage = httpGetDelay(mainUrl, delayTime)
-        if "You can purchase online access" in mainPage["data"] or \
-           "Registered Users please login" in mainPage["data"]:
+        if b"You can purchase online access" in mainPage["data"] or \
+           b"Registered Users please login" in mainPage["data"]:
             logging.info("No license for this article via Wiley")
             return None
 
-        if "temporarily unavailable" in mainPage["data"]:
+        if b"temporarily unavailable" in mainPage["data"]:
             logging.info("Article page not found")
             return None
 
-        if "We're sorry, the page you've requested does not exist at this address." in mainPage["data"]:
+        if b"We're sorry, the page you've requested does not exist at this address." in mainPage["data"]:
             raise pubGetError("Invalid landing page", "wileyInvalidLanding", mainUrl)
 
         # strip the navigation elements from the html
@@ -2355,12 +2033,13 @@ class WileyCrawler(Crawler):
 
         # pdf
         #pdfUrl = getMetaPdfUrl(mainPage)
-        pdfUrl = absUrl.replace("/abstract", "/pdf").replace("/full", "/pdf")
+        pdfUrl = absUrl.replace("/abstract", "/pdf").replace("/full", "/pdf").replace("/abs", "/pdf")
         pdfPage = httpGetDelay(pdfUrl, delayTime)
-        parseHtmlLinks(pdfPage)
-        if "pdfDocument" in pdfPage["iframes"]:
-            logging.debug("found framed PDF, requesting inline pdf")
-            pdfPage  = httpGetDelay(pdfPage["iframes"]["pdfDocument"], delayTime)
+        if not isPdf(pdfPage):
+            parseHtmlLinks(pdfPage)
+            if "pdfDocument" in pdfPage["iframes"]:
+                logging.debug("found framed PDF, requesting inline pdf")
+                pdfPage  = httpGetDelay(pdfPage["iframes"]["pdfDocument"], delayTime)
         paperData["main.pdf"] = pdfPage
 
         # supplements
@@ -2561,9 +2240,9 @@ class SilverchairCrawler(Crawler):
 
         # pages like http://journal.publications.chestnet.org/article.aspx?articleid=1065945
         # have no html view
-        if "First Page Preview" in fullPage["data"]:
+        if b"First Page Preview" in fullPage["data"]:
             logging.debug("No html view")
-        elif "The resource you are looking for might have been removed" in fullPage["data"]:
+        elif b"The resource you are looking for might have been removed" in fullPage["data"]:
             raise pubGetError("landing page is error page", "errorPage")
         else:
             fullPage["data"] = htmlExtractPart(fullPage, "div", {"class":"left contentColumn eqColumn"})
@@ -2677,7 +2356,7 @@ class TandfCrawler(Crawler):
             logging.info("No license for this Taylor and Francis journal")
             return None
 
-        if "client IP is blocked" in fullPage["data"]:
+        if b"client IP is blocked" in fullPage["data"]:
             raise pubGetError("Got blocked by Taylor and Francis", "tandfBlocked")
 
         fullPage["data"] = htmlExtractPart(fullPage, "div", {"id":"fulltextPanel"})
@@ -3355,27 +3034,20 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf'):
         logging.info('Crawling base URL %r' % url)
         paperData = None
 
-        try:
-            paperData = crawler.crawl(url)
+        paperData = crawler.crawl(url)
 
-            # make sure that the PDF data is really in PDF format
-            if paperData is not None and "main.pdf" in paperData:
-                mustBePdf(paperData["main.pdf"], artMeta)
+        # make sure that the PDF data is really in PDF format
+        if paperData is not None and "main.pdf" in paperData:
+            mustBePdf(paperData["main.pdf"], artMeta)
 
-            if doc_type == 'pdf':
+        if doc_type == 'pdf':
+            if 'main.pdf' not in paperData:
+                raise pubGetError('No pdf found for this url %s %s' % (artMeta["title"], landingUrl), 'noPdf')
+            else:
                 return paperData['main.pdf']['data']
-            else:
-                return paperData['main.html']['data']
+        else:
+            return paperData['main.html']['data']
 
-        except pubGetError as ex:
-            lastException = ex
-
-        if paperData is None:
-            if lastException is not None:
-                logging.warn('Crawler failed, Error: %s, %s, %s' % (lastException.logMsg, lastException.longMsg, lastException.detailMsg))
-            else:
-                logging.warn('Crawler failed')
-            continue
         return paperData
 
     logging.warn("No crawler was able to handle the paper, giving up")
@@ -3384,110 +3056,6 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf'):
     else:
         raise lastException
     return
-
-def getArticleMeta(docId):
-    " get pubmed article info from local db or ncbi webservice. return as dict. "
-    artMeta = None
-
-    haveMedline = pubConf.mayResolveTextDir("medline")
-
-    if haveMedline and not SKIPLOCALMEDLINE:
-        artMeta = readLocalMedline(docId)
-    if artMeta==None:
-        artMeta = downloadPubmedMeta(docId)
-
-    return artMeta
-
-def crawlDocuments(docIds, skipIssns, forceContinue):
-    """
-    run crawler on a list of (paperId, sourceDir) tuples
-    """
-    rootLog = logging.getLogger('')
-
-    successCount = 0
-    consecErrorCount = 0
-    fileLogHandler = None
-
-    for i, docIdTuple in enumerate(docIds):
-        docId, srcDir = docIdTuple
-
-        # lock the directory
-        removeLocks()
-        checkCreateLock(srcDir)
-
-        # write log to a file in the src directory
-        if fileLogHandler is not None:
-            rootLog.handlers.remove(fileLogHandler)
-        fileLogHandler = pubGeneric.logToFile(join(srcDir, "crawler.log"))
-
-        todoCount = len(docIds)-i
-        timeStr = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
-        logging.info("--- %s Crawl start: docId %s, dir %s, %d IDs to crawl" % \
-            (timeStr, docId, srcDir, todoCount))
-
-        global webCache
-        webCache.clear()
-
-        try:
-            artMeta = getArticleMeta(docId)
-        except pubGetError:
-            writeDocIdStatus(srcDir, docId, "no_meta", "no metadata")
-            continue
-
-        logging.info("Got Metadata: %s, %s, %s" % (artMeta["journal"], artMeta["year"], artMeta["title"]))
-
-        try:
-            checkIssnErrorCounts(artMeta, skipIssns, srcDir)
-            paperData = crawlOneDoc(artMeta, srcDir)
-            writePaperData(docId, artMeta, paperData, srcDir)
-            consecErrorCount = 0
-            successCount += 1
-
-        except pubGetError as e:
-            # track document failure
-            consecErrorCount += 1
-            docId = artMeta["pmid"]
-            writeDocIdStatus(srcDir, docId, e.logMsg, msg=e.longMsg, detail=e.detailMsg)
-
-            # track journal+year failure counts
-            issnYear = getIssnYear(artMeta)
-            global issnYearErrorCounts
-            issnYearErrorCounts[issnYear] += 1
-
-            # some errors require longer waiting times
-            if e.logMsg not in ["noOutlinkOrDoi", "unknownHost", "noLicense"]:
-                waitSec = ERRWAIT*consecErrorCount
-                logging.debug("Sleeping for %d secs after error" % waitSec)
-                time.sleep(waitSec)
-
-            # if many errors in a row, wait for 10 minutes
-            if consecErrorCount > BIGWAITCONSECERR:
-                logging.warn("%d consecutive errors, pausing a bit" % consecErrorCount)
-                time.sleep(900)
-
-            # if too many errors in a row, bail out
-            if consecErrorCount > MAXCONSECERR:
-                logging.error("Too many consecutive errors, stopping crawl")
-                e.longMsg = "Crawl stopped after too many consecutive errors ({}): {}".format(consecErrorCount, e.longMsg)
-                if forceContinue:
-                    continue
-                raise
-
-            if DO_PAUSE:
-                input("Press Enter to process next paper...")
-        except Exception as e:
-            if forceContinue:
-                logging.error("FAILED TO CRAWL PMID: {}".format(docId))
-                logging.error(traceback.format_exc())
-            else:
-                raise
-
-    logging.info("Downloaded %d articles" % (successCount))
-
-    # cleanup
-    removeLocks()
-    if fileLogHandler!=None:
-        rootLog.handlers.remove(fileLogHandler)
 
 if __name__=="__main__":
     import doctest

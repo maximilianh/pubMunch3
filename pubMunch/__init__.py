@@ -10,7 +10,7 @@ def download_pmid():
 
     print(args)
 
-    meta = pubCrawlLib.getArticleMeta(args.pmid)
+    meta = pubCrawlLib.downloadPubmedMeta(args.pmid)
     pdf_file = pubCrawlLib.crawlOneDoc(meta, doc_type='pdf')
 
     with open('{}.pdf'.format(args.pmid), 'wb') as file:
