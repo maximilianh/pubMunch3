@@ -1186,8 +1186,9 @@ def findLinksByText(page, searchRe):
     urls = []
     page = parseHtmlLinks(page)
     for linkUrl, linkText in page["links"].items():
+        linkText = linkText.decode('utf8')
         dbgStr = "Checking linkText %s (url %s) against %s" % \
-            (repr(unidecode.unidecode(linkText)), linkUrl, searchRe.pattern)
+            (repr(linkText), linkUrl, searchRe.pattern)
         logging.log(5, dbgStr)
         if searchRe.match(linkText):
             urls.append(linkUrl)

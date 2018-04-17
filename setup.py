@@ -6,7 +6,7 @@ here = path.abspath(path.dirname(__file__))
 
 setup(
     name='pubMunch3',
-    version='1.0.1',
+    version='1.0.2',
     description='A library and tool for downloading pubmed articles',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 

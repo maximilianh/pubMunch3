@@ -3,7 +3,7 @@ import argparse
 from . import pubCrawlLib
 
 def download_pmid(pmid):
-    meta = pubCrawlLib.getArticleMeta(pmid)
+    meta = pubCrawlLib.downloadPubmedMeta(pmid)
     pdf_file = pubCrawlLib.crawlOneDoc(meta, doc_type='pdf')
     return pdf_file
 
