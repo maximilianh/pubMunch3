@@ -26,6 +26,7 @@ from . import pubConf, pubGeneric, pubStore, pubCrossRef, pubPubmed
 from . import maxTables, htmlPrint, maxCommon
 from .scihub import scihub
 
+import csv
 import chardet # guessing encoding, ported from firefox
 import unidecode # library for converting to ASCII, ported from perl
 import incapsula
@@ -1132,7 +1133,7 @@ def resolveDoi(doi):
     logging.debug("DOI %s redirects to %s" % (doi, trgUrl))
     return trgUrl
 
-def findCrawlers_article(artMeta):
+def findCrawlers_article(artMeta, allCrawlers):
     """
     return those crawlers that return True for canDo_article(artMeta)
     """
@@ -1143,7 +1144,7 @@ def findCrawlers_article(artMeta):
             crawlers.append(c)
     return crawlers
 
-def findCrawlers_url(landingUrl):
+def findCrawlers_url(landingUrl, allCrawlers):
     """
     return the crawlers that are OK with crawling a URL
     """
@@ -1155,6 +1156,9 @@ def findCrawlers_url(landingUrl):
     return crawlers
 
 class Crawler():
+    def __init__(self, config):
+        self.config = config
+
     """
     a scraper for article webpages.
     """
@@ -1222,6 +1226,7 @@ def findLinksWithUrlRe(page, searchRe):
     urls = []
     page = parseHtmlLinks(page)
     for linkUrl, linkText in page['links'].items():
+        linkText = linkText.decode('utf8')
         dbgStr = 'Checking link: %s (%s), against %s' % (linkUrl, unidecode.unidecode(linkText), searchRe.pattern)
         logging.log(5, dbgStr)
         if searchRe.match(linkUrl):
@@ -1311,12 +1316,12 @@ def getHosterIssns(publisherName):
         logging.log(5, "Parsing %s to get highwire ISSNs" % journalFname)
 
         logging.info("Parsing ISSN <-> publisher list from %s" % journalFname)
-        for row in maxCommon.iterTsvRows(journalFname):
-            if row.source in ["HIGHWIRE", "WILEY"]:
-                hoster = row.source
-                journalUrl = "http://"+ row.urls.strip().replace("http://", "")
-                issn = row.pIssn.strip()
-                eIssn = row.eIssn.strip()
+        for row in csv.DictReader(journalFname, delimiter='\t'):
+            if row['source'] in ["HIGHWIRE", "WILEY"]:
+                hoster = row['source']
+                journalUrl = "http://"+ row['urls'].strip().replace("http://", "")
+                issn = row['pIssn'].strip()
+                eIssn = row['eIssn'].strip()
                 publisherIssns[hoster][issn] = journalUrl
                 publisherIssns[hoster][eIssn] = journalUrl
 
@@ -1576,11 +1581,10 @@ class ElsevierCrawlerMixin(object):
 
 
 class ElsevierApiCrawler(Crawler, ElsevierCrawlerMixin):
-
     name = "elsevier-api"
 
     def canDo_url(self, url):
-        return (pubConf.elsevierApiKey is not None) and self.isElsevierUrl(url)
+        return (self.config.get('elsevierApiKey', None) and self.isElsevierUrl(url))
 
     def crawl(self, url):
         delayTime = crawlDelays["elsevier-api"]
@@ -1590,7 +1594,7 @@ class ElsevierApiCrawler(Crawler, ElsevierCrawlerMixin):
         else:
             parts = url.split("/")
         if len(parts)>1:
-            pdfUrl = 'https://api.elsevier.com/content/article/pii/%s?apiKey=%s' % (parts[-1], pubConf.elsevierApiKey)
+            pdfUrl = 'https://api.elsevier.com/content/article/pii/%s?apiKey=%s' % (parts[-1], self.config['elsevierApiKey'])
         if pdfUrl is None:
             raise pubGetError("no PII for Elsevier article", "noElsevierPII")
 
@@ -1831,7 +1835,7 @@ class HighwireCrawler(Crawler):
             raise pubGetError("Highwire invalid DOI", "highwireInvalidUrl")
 
         isDrupal = False
-        if htmlPage["mimeType"] != b"application/pdf" and not htmlPage["data"].startswith(b"%PDF"):
+        if htmlPage["mimeType"] != "application/pdf" and not htmlPage["data"].startswith(b"%PDF"):
             aaasStr = "The content you requested is not included in your institutional subscription"
             aacrStr = "Purchase Short-Term Access"
             stopWords = [aaasStr, aacrStr]
@@ -1874,7 +1878,7 @@ class HighwireCrawler(Crawler):
             pdfUrl = url+".full.pdf"
         pdfPage = httpGetDelay(pdfUrl, delayTime)
         if not isPdf(pdfPage):
-            raise pubGetError('predicted PDF page is not PDF. Is this really highwire?', 'HighwirePdfNotValid', pdfUrl)
+            raise pubGetError('predicted PDF page is not PDF. Is this really highwire?', 'HighwirePdfNotValid', pdfUrl + ' from ' + url)
 
         paperData["main.pdf"] = pdfPage
 
@@ -2117,7 +2121,9 @@ class LwwCrawler(Crawler):
 
     issnList = None
 
-    def __init__(self):
+    def __init__(self, config):
+        super().__init__(config)
+
         self.currentPmid = None
 
     def canDo_article(self, artMeta):
@@ -2180,7 +2186,7 @@ class LwwCrawler(Crawler):
         pmidResult = httpGetDelay(pmidUrl)
         # parse internal access from javascript:
         #   var an = "00019605-201107000-00010";
-        mat = re.search('var an = "([-0-9]+)";', pmidResult["data"])
+        mat = re.search('var an = "([-0-9]+)";', pmidResult["data"].decode('utf8'))
         if mat is None:
             logging.debug("Can't fine OVID accession in response from {}".format(pmidUrl))
             return None
@@ -2189,7 +2195,7 @@ class LwwCrawler(Crawler):
         ovidMetaUrl = "http://insights.ovid.com/home?accession={}".format(accession)
         ovidMetaResult = httpGetDelay(ovidMetaUrl)
         try:
-            ovidMeta = json.loads(ovidMetaResult["data"], "UTF8")
+            ovidMeta = json.loads(ovidMetaResult["data"].decode('utf8'))
         except json.decoder.JSONDecodeError as ex:
             raise pubGetError("error parsing OVID metadata JSON from {}: {}".format(ovidMetaUrl, str(ex)),
                               "ovidMetaParseFailed")
@@ -2927,23 +2933,7 @@ class GenericCrawler(Crawler):
         paperData = downloadSuppFiles(suppUrls, paperData, delayTime, httpGetFunc=self._httpGetDelay)
         return paperData
 
-# the list of all crawlers
-# order is important: the most specific crawlers come first
-allCrawlers = [
-    ElsevierApiCrawler(), ElsevierCrawler(), NpgCrawler(), HighwireCrawler(), SpringerCrawler(), \
-    WileyCrawler(), SilverchairCrawler(), NejmCrawler(), LwwCrawler(), TandfCrawler(),\
-    PmcCrawler(), DeGruyterCrawler(), GenericCrawler() ]
-
-allCrawlerNames = [c.name for c in allCrawlers]
-
-def addCrawler(name):
-    " add an custom crawler to global list "
-    global allCrawlers, allCrawlerNames
-    if name=="scihub":
-        allCrawlers.append(ScihubCrawler())
-        allCrawlerNames = [c.name for c in allCrawlers]
-
-def sortCrawlers(crawlers):
+def sortCrawlers(crawlers, allCrawlerNames):
     """
     re-order crawlers in the same order that they have in the allCrawlers list
     """
@@ -2957,7 +2947,7 @@ def sortCrawlers(crawlers):
             sortedCrawlers.append(cByName[cName])
     return sortedCrawlers
 
-def selectCrawlers(artMeta):
+def selectCrawlers(artMeta, allCrawlers):
     """
     returns the crawlers to use for an article, by first asking all crawlers
     if they want to handle this paper, based on either article meta
@@ -2965,10 +2955,11 @@ def selectCrawlers(artMeta):
     """
 
     # find custom crawlers that agree to crawl, based on the article meta
-    okCrawlers = findCrawlers_article(artMeta)
+    okCrawlers = findCrawlers_article(artMeta, allCrawlers)
     landingUrl = None
     crawlerNames = [c.name for c in okCrawlers]
     customCrawlers = set(crawlerNames) - set(["pmc", "generic"])
+
 
     if len(customCrawlers)==0:
         # get the landing URL from a search engine like pubmed or crossref
@@ -2976,26 +2967,37 @@ def selectCrawlers(artMeta):
         logging.debug("No custom crawler accepted paper based on meta data, getting landing URL")
         landingUrl = getLandingUrlSearchEngine(artMeta)
 
-        okCrawlers.extend(findCrawlers_url(landingUrl))
+        okCrawlers.extend(findCrawlers_url(landingUrl, allCrawlers))
 
     if len(okCrawlers)==0:
         logging.info("No crawler found on either article metadata or URL.")
         return [], landingUrl
 
-    okCrawlers = sortCrawlers(okCrawlers)
+    allCrawlerNames = [c.name for c in allCrawlers]
+    okCrawlers = sortCrawlers(okCrawlers, allCrawlerNames)
 
     logging.debug("List of crawlers for this document, by priority: %s" % [c.name for c in okCrawlers])
     return okCrawlers, landingUrl
 
-def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf'):
+def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
     """
     return all data from a paper given the article meta data
 
     forceCrawlers is a list of crawlers that have to be used, e.g. ["npg", "pmc"]
     """
     # determine the crawlers to use, this possibly produces a landing url as a side-effect
+
+    # the list of all crawlers
+    # order is important: the most specific crawlers come first
+    allCrawlerClasses = [
+        ElsevierApiCrawler, ElsevierCrawler, NpgCrawler, HighwireCrawler, SpringerCrawler, \
+        WileyCrawler, SilverchairCrawler, NejmCrawler, LwwCrawler, TandfCrawler,\
+        PmcCrawler, DeGruyterCrawler, GenericCrawler]
+
+    allCrawlers = [clz(config) for clz in allCrawlerClasses]
+
     if forceCrawlers==None:
-        crawlers, landingUrl = selectCrawlers(artMeta)
+        crawlers, landingUrl = selectCrawlers(artMeta, allCrawlers)
     else:
         # just use the crawlers we got
         logging.debug("Crawlers were fixed externally: %s" % ",".join(forceCrawlers))
@@ -3037,6 +3039,9 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf'):
 
         paperData = crawler.crawl(url)
 
+        if paperData is None:
+            return None
+
         # make sure that the PDF data is really in PDF format
         if paperData is not None and "main.pdf" in paperData:
             mustBePdf(paperData["main.pdf"], artMeta)
@@ -3048,8 +3053,6 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf'):
                 return paperData['main.pdf']['data']
         else:
             return paperData['main.html']['data']
-
-        return paperData
 
     logging.warn("No crawler was able to handle the paper, giving up")
     if lastException is None:
