@@ -11,8 +11,9 @@ def download_pmid_program():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('pmid', type=int, help='The pubmed id to download')
 
-
     parser.add_argument('--elsevier_key', type=str, help='The pubmed id to download')
+    
+    parser.add_argument('--sfx_server', type=str, help='The pubmed id to download')
 
     args = parser.parse_args()
 
@@ -22,6 +23,9 @@ def download_pmid_program():
 
     if args.elsevier_key is not None:
         config['elsevierApiKey'] = args.elsevier_key
+
+    if args.sfx_server is not None:
+        config['crawlSfxServer'] = args.sfx_server
 
     pdf_file = download_pmid(args.pmid, config=config)
 

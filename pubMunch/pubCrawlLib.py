@@ -235,7 +235,7 @@ def resolveWithSfx(sfxServer, xmlQuery):
     url = urls[0].encode("utf8")
     return url
 
-def getLandingUrlSearchEngine(articleData):
+def getLandingUrlSearchEngine(articleData, config):
     """ given article meta data, try to find landing URL via a search engine:
     - medline's DOI
     - a Crossref search with medline data
@@ -278,10 +278,10 @@ def getLandingUrlSearchEngine(articleData):
             return landingUrl
 
     # try SFX
-    if pubConf.crawlSfxServer==None:
+    if 'crawlSfxServer' in config:
         logging.warn("You have not defined an SFX server in pubConf.py, cannot search for fulltext")
     else:
-        landingUrl = resolvePmidWithSfx(pubConf.crawlSfxServer, articleData["pmid"])
+        landingUrl = resolvePmidWithSfx(config['crawlSfxServer'], articleData["pmid"])
 
     if landingUrl==None:
         raise pubGetError("No fulltext for this article", "noOutlinkOrDoi")
@@ -1597,6 +1597,8 @@ class ElsevierApiCrawler(Crawler, ElsevierCrawlerMixin):
             pdfUrl = 'https://api.elsevier.com/content/article/pii/%s?apiKey=%s' % (parts[-1], self.config['elsevierApiKey'])
         if pdfUrl is None:
             raise pubGetError("no PII for Elsevier article", "noElsevierPII")
+
+        print('Got it', pdfUrl)
 
         paperData = OrderedDict()
         pdfPage = httpGetDelay(pdfUrl, delayTime, accept='application/pdf')
@@ -2947,7 +2949,7 @@ def sortCrawlers(crawlers, allCrawlerNames):
             sortedCrawlers.append(cByName[cName])
     return sortedCrawlers
 
-def selectCrawlers(artMeta, allCrawlers):
+def selectCrawlers(artMeta, allCrawlers, config):
     """
     returns the crawlers to use for an article, by first asking all crawlers
     if they want to handle this paper, based on either article meta
@@ -2965,7 +2967,7 @@ def selectCrawlers(artMeta, allCrawlers):
         # get the landing URL from a search engine like pubmed or crossref
         # and ask the crawlers again
         logging.debug("No custom crawler accepted paper based on meta data, getting landing URL")
-        landingUrl = getLandingUrlSearchEngine(artMeta)
+        landingUrl = getLandingUrlSearchEngine(artMeta, config)
 
         okCrawlers.extend(findCrawlers_url(landingUrl, allCrawlers))
 
@@ -2997,7 +2999,7 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
     allCrawlers = [clz(config) for clz in allCrawlerClasses]
 
     if forceCrawlers==None:
-        crawlers, landingUrl = selectCrawlers(artMeta, allCrawlers)
+        crawlers, landingUrl = selectCrawlers(artMeta, allCrawlers, config)
     else:
         # just use the crawlers we got
         logging.debug("Crawlers were fixed externally: %s" % ",".join(forceCrawlers))
@@ -3031,7 +3033,7 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
                 url = landingUrl
             else:
                 # otherwise find the landing URL ourselves
-                url = getLandingUrlSearchEngine(artMeta)
+                url = getLandingUrlSearchEngine(artMeta, config)
 
         # now run the crawler on the landing URL
         logging.info('Crawling base URL %r' % url)
