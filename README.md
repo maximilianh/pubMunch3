@@ -1,3 +1,10 @@
+Note, this is a Python 3 port of pubMunch. See https://github.com/maximilianh/pubMunch
+
+This was created by deleting a bunch of unnessarily things in pubMunch and then running
+2to3 on the remaining files.
+
+A bunch of minor fixes also needed to be made.
+
 # Overview
 
 These are the tools that I wrote for the UCSC Genocoding project, see
