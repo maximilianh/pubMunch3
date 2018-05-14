@@ -6,7 +6,7 @@ here = path.abspath(path.dirname(__file__))
 
 setup(
     name='pubMunch3',
-    version='1.0.3',
+    version='1.0.4',
     description='A library and tool for downloading pubmed articles',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
@@ -16,6 +16,10 @@ setup(
         'incapsula-cracker-py3==0.1.8.1',
         'html5lib==1.0.1'
     ],
+
+    package_data = {
+        'pubMunch': ['data/*']
+    },
 
     entry_points={
         'console_scripts': [
