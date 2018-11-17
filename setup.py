@@ -6,7 +6,7 @@ here = path.abspath(path.dirname(__file__))
 
 setup(
     name='pubMunch3',
-    version='1.0.3',
+    version='1.0.4',
     description='A library and tool for downloading pubmed articles',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
@@ -17,11 +17,8 @@ setup(
         'html5lib==1.0.1'
     ],
 
-    zip_safe=False,
-
-    package_data={
-        'pubMunch': ['data/journals.tab',
-                     'data/tandfIssns.txt'],
+    package_data = {
+        'pubMunch': ['data/*']
     },
 
     include_package_data=True,
