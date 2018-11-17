@@ -17,6 +17,15 @@ setup(
         'html5lib==1.0.1'
     ],
 
+    zip_safe=False,
+
+    package_data={
+        'pubMunch': ['data/journals.tab',
+                     'data/tandfIssns.txt'],
+    },
+
+    include_package_data=True,
+
     entry_points={
         'console_scripts': [
             'download_pmid=pubMunch:download_pmid_program',
