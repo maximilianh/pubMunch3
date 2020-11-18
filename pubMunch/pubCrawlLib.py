@@ -3021,40 +3021,44 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
 
     lastException = None
     for crawler in crawlers:
-        logging.info("Trying crawler %s" % crawler.name)
+        try:
+            logging.info("Trying crawler %s" % crawler.name)
 
-        # only needed for scihub: send the meta data to the crawler
-        crawler.canDo_article(artMeta)
+            # only needed for scihub: send the meta data to the crawler
+            crawler.canDo_article(artMeta)
 
-        # first try if the crawler can generate the landing url from the metaData
-        url = crawler.makeLandingUrl(artMeta)
-        if url==None:
-            if landingUrl!=None:
-                url = landingUrl
+            # first try if the crawler can generate the landing url from the metaData
+            url = crawler.makeLandingUrl(artMeta)
+            if url==None:
+                if landingUrl!=None:
+                    url = landingUrl
+                else:
+                    # otherwise find the landing URL ourselves
+                    url = getLandingUrlSearchEngine(artMeta, config)
+
+            # now run the crawler on the landing URL
+            logging.info('Crawling base URL %r' % url)
+            paperData = None
+
+            paperData = crawler.crawl(url)
+
+            if paperData is None:
+                return None
+
+            # make sure that the PDF data is really in PDF format
+            if paperData is not None and "main.pdf" in paperData:
+                mustBePdf(paperData["main.pdf"], artMeta)
+
+            if doc_type == 'pdf':
+                if 'main.pdf' not in paperData:
+                    raise pubGetError('No pdf found for this url %s %s' % (artMeta["title"], landingUrl), 'noPdf')
+                else:
+                    return paperData['main.pdf']['data']
             else:
-                # otherwise find the landing URL ourselves
-                url = getLandingUrlSearchEngine(artMeta, config)
-
-        # now run the crawler on the landing URL
-        logging.info('Crawling base URL %r' % url)
-        paperData = None
-
-        paperData = crawler.crawl(url)
-
-        if paperData is None:
-            return None
-
-        # make sure that the PDF data is really in PDF format
-        if paperData is not None and "main.pdf" in paperData:
-            mustBePdf(paperData["main.pdf"], artMeta)
-
-        if doc_type == 'pdf':
-            if 'main.pdf' not in paperData:
-                raise pubGetError('No pdf found for this url %s %s' % (artMeta["title"], landingUrl), 'noPdf')
-            else:
-                return paperData['main.pdf']['data']
-        else:
-            return paperData['main.html']['data']
+                return paperData['main.html']['data']
+        except Exception as e:
+            print("Caught exception:", e)
+            lastException = e
 
     logging.warn("No crawler was able to handle the paper, giving up")
     if lastException is None:
