@@ -742,7 +742,7 @@ def parseHtmlLinks(page, canBeOffsite=False, landingPage_ignoreUrlREs=[]):
                 content = l.get('content')
                 logging.log(5, 'found meta refresh tag: %s' % str(content))
                 if content != None:
-                    parts = string.split(content, '=', 1)
+                    parts = content.split("=", 1)
                     if len(parts)==2:
                         url = urllib.parse.urljoin(baseUrl, parts[1])
                         metaDict['refresh'] = url
