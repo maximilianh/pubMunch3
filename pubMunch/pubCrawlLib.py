@@ -2040,9 +2040,11 @@ class WileyCrawler(Crawler):
 
         # pdf
         #pdfUrl = getMetaPdfUrl(mainPage)
-        pdfUrl = absUrl.replace("/abstract", "/pdf").replace("/full", "/pdf").replace("/abs", "/pdf")
-        pdfPage = httpGetDelay(pdfUrl, delayTime)
+        #pdfUrl = absUrl.replace("/abstract", "/pdf").replace("/full", "/pdf").replace("/abs", "/pdf")
+        pdfUrl = absUrl.replace("/pdf", "/pdfdirect").replace("/abstract", "/pdfdirect").replace("/full", "/pdfdirect").replace("/abs", "/pdfdirect")
+        pdfPage = httpGetDelay(pdfUrl, delayTime, accept="application/pdf")
         if not isPdf(pdfPage):
+            pdfPage = httpGetDelay(pdfUrl, delayTime)
             parseHtmlLinks(pdfPage)
             if "pdfDocument" in pdfPage["iframes"]:
                 logging.debug("found framed PDF, requesting inline pdf")
