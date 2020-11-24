@@ -2,10 +2,17 @@ import argparse
 
 from . import pubCrawlLib
 
-def download_pmid(pmid, config={}):
+def download_pmid(pmid, config={}, return_info=False):
+    print(pmid, "Downloading meta")
     meta = pubCrawlLib.downloadPubmedMeta(str(pmid))
-    pdf_file = pubCrawlLib.crawlOneDoc(meta, doc_type='pdf', config=config)
-    return pdf_file
+    print(pmid, "Downloading oneDoc")
+    if return_info:
+        print(pmid, "Getting info as well")
+        pdf_file, crawl_info = pubCrawlLib.crawlOneDoc(meta, doc_type='pdf', config=config, return_info=return_info)
+        return pdf_file, crawl_info
+    else:
+        pdf_file = pubCrawlLib.crawlOneDoc(meta, doc_type='pdf', config=config, return_info=return_info)
+        return pdf_file
 
 def download_pmid_program():
     parser = argparse.ArgumentParser(description='Process some integers.')

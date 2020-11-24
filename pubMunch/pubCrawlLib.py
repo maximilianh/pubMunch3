@@ -2983,7 +2983,7 @@ def selectCrawlers(artMeta, allCrawlers, config):
     logging.debug("List of crawlers for this document, by priority: %s" % [c.name for c in okCrawlers])
     return okCrawlers, landingUrl
 
-def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
+def crawlOneDoc(artMeta, forceCrawlers=False, doc_type='pdf', config={}, return_info=False):
     """
     return all data from a paper given the article meta data
 
@@ -3000,11 +3000,17 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
 
     allCrawlers = [clz(config) for clz in allCrawlerClasses]
 
-    if forceCrawlers==None:
+    crawlInfo = {
+        "attempted": [],
+        "succeeded": None,
+        "exceptions": []
+    }
+
+    if not forceCrawlers:
         crawlers, landingUrl = selectCrawlers(artMeta, allCrawlers, config)
     else:
         # just use the crawlers we got
-        logging.debug("Crawlers were fixed externally: %s" % ",".join(forceCrawlers))
+        logging.debug("Crawlers were fixed externally: %s" % ",".join(allCrawlerClasses))
         cByName = {}
         for c in allCrawlers:
             cByName[c.name] = c
@@ -3021,9 +3027,10 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
     if landingUrl is not None:
         artMeta["landingUrl"] = landingUrl
 
-    lastException = None
+    print("Crawlers", [crawler.name for crawler in crawlers])
     for crawler in crawlers:
         try:
+            print("Trying crawler %s" % crawler.name, flush=True)
             logging.info("Trying crawler %s" % crawler.name)
 
             # only needed for scihub: send the meta data to the crawler
@@ -3041,11 +3048,12 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
             # now run the crawler on the landing URL
             logging.info('Crawling base URL %r' % url)
             paperData = None
+            crawlInfo["attempted"].append(crawler.name)
 
             paperData = crawler.crawl(url)
 
             if paperData is None:
-                return None
+                raise pubGetError('No paperData found for this url %s %s' % (artMeta["title"], landingUrl), 'noPaperData')
 
             # make sure that the PDF data is really in PDF format
             if paperData is not None and "main.pdf" in paperData:
@@ -3054,19 +3062,31 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
             if doc_type == 'pdf':
                 if 'main.pdf' not in paperData:
                     raise pubGetError('No pdf found for this url %s %s' % (artMeta["title"], landingUrl), 'noPdf')
-                else:
+                elif not return_info:
                     return paperData['main.pdf']['data']
-            else:
+                else:
+                    crawlInfo["succeeded"] = crawler.name
+                    return paperData['main.pdf']['data'], crawlInfo
+
+            elif not return_info:
+                print("A")
                 return paperData['main.html']['data']
+            else:
+                print("B")
+                crawlInfo["succeeded"] = crawler.name
+                return paperData['main.pdf']['data'], crawlInfo
+
         except Exception as e:
             print("Caught exception:", e)
-            lastException = e
-
-    logging.warn("No crawler was able to handle the paper, giving up")
-    if lastException is None:
+            crawlInfo["exceptions"].append(str(e))
+            
+    print("No crawler was able to handle the paper, giving up", flush=True)
+    if return_info:
+        return None, crawlInfo
+    if not crawlInfo["exceptions"] is None:
         raise pubGetError('No crawler was able to handle the paper', 'noCrawlerSuccess', landingUrl)
     else:
-        raise lastException
+        raise crawlInfo["exceptions"][-1]
     return
 
 if __name__=="__main__":
