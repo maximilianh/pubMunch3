@@ -1783,7 +1783,9 @@ class HighwireCrawler(Crawler):
                 ipAddr = socket.gethostbyname(hostname)
                 self.hostCache[hostname] = ipAddr
             except socket.gaierror:
-                raise pubGetError("Illegal hostname %s in link" % hostname, "invalidHostname", hostname)
+                print("Highwire: Illegal hostname %s in link" % hostname)
+                return False
+                #raise pubGetError("Illegal hostname %s in link" % hostname, "invalidHostname", hostname)
 
         ipParts = ipAddr.split(".")
         ipParts = [int(x) for x in ipParts]
