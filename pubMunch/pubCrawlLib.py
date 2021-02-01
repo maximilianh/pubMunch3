@@ -742,7 +742,7 @@ def parseHtmlLinks(page, canBeOffsite=False, landingPage_ignoreUrlREs=[]):
                 content = l.get('content')
                 logging.log(5, 'found meta refresh tag: %s' % str(content))
                 if content != None:
-                    parts = string.split(content, '=', 1)
+                    parts = content.split("=", 1)
                     if len(parts)==2:
                         url = urllib.parse.urljoin(baseUrl, parts[1])
                         metaDict['refresh'] = url
@@ -1783,7 +1783,9 @@ class HighwireCrawler(Crawler):
                 ipAddr = socket.gethostbyname(hostname)
                 self.hostCache[hostname] = ipAddr
             except socket.gaierror:
-                raise pubGetError("Illegal hostname %s in link" % hostname, "invalidHostname", hostname)
+                print("Highwire: Illegal hostname %s in link" % hostname)
+                return False
+                #raise pubGetError("Illegal hostname %s in link" % hostname, "invalidHostname", hostname)
 
         ipParts = ipAddr.split(".")
         ipParts = [int(x) for x in ipParts]
@@ -2040,9 +2042,11 @@ class WileyCrawler(Crawler):
 
         # pdf
         #pdfUrl = getMetaPdfUrl(mainPage)
-        pdfUrl = absUrl.replace("/abstract", "/pdf").replace("/full", "/pdf").replace("/abs", "/pdf")
-        pdfPage = httpGetDelay(pdfUrl, delayTime)
+        #pdfUrl = absUrl.replace("/abstract", "/pdf").replace("/full", "/pdf").replace("/abs", "/pdf")
+        pdfUrl = absUrl.replace("/pdf", "/pdfdirect").replace("/abstract", "/pdfdirect").replace("/full", "/pdfdirect").replace("/abs", "/pdfdirect")
+        pdfPage = httpGetDelay(pdfUrl, delayTime, accept="application/pdf")
         if not isPdf(pdfPage):
+            pdfPage = httpGetDelay(pdfUrl, delayTime)
             parseHtmlLinks(pdfPage)
             if "pdfDocument" in pdfPage["iframes"]:
                 logging.debug("found framed PDF, requesting inline pdf")
@@ -2981,7 +2985,7 @@ def selectCrawlers(artMeta, allCrawlers, config):
     logging.debug("List of crawlers for this document, by priority: %s" % [c.name for c in okCrawlers])
     return okCrawlers, landingUrl
 
-def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
+def crawlOneDoc(artMeta, forceCrawlers=False, doc_type='pdf', config={}, return_info=False):
     """
     return all data from a paper given the article meta data
 
@@ -2998,11 +3002,17 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
 
     allCrawlers = [clz(config) for clz in allCrawlerClasses]
 
-    if forceCrawlers==None:
+    crawlInfo = {
+        "attempted": [],
+        "succeeded": None,
+        "exceptions": []
+    }
+
+    if not forceCrawlers:
         crawlers, landingUrl = selectCrawlers(artMeta, allCrawlers, config)
     else:
         # just use the crawlers we got
-        logging.debug("Crawlers were fixed externally: %s" % ",".join(forceCrawlers))
+        logging.debug("Crawlers were fixed externally: %s" % ",".join(allCrawlerClasses))
         cByName = {}
         for c in allCrawlers:
             cByName[c.name] = c
@@ -3019,48 +3029,66 @@ def crawlOneDoc(artMeta, forceCrawlers=None, doc_type='pdf', config={}):
     if landingUrl is not None:
         artMeta["landingUrl"] = landingUrl
 
-    lastException = None
+    print("Crawlers", [crawler.name for crawler in crawlers])
     for crawler in crawlers:
-        logging.info("Trying crawler %s" % crawler.name)
+        try:
+            print("Trying crawler %s" % crawler.name, flush=True)
+            logging.info("Trying crawler %s" % crawler.name)
 
-        # only needed for scihub: send the meta data to the crawler
-        crawler.canDo_article(artMeta)
+            # only needed for scihub: send the meta data to the crawler
+            crawler.canDo_article(artMeta)
 
-        # first try if the crawler can generate the landing url from the metaData
-        url = crawler.makeLandingUrl(artMeta)
-        if url==None:
-            if landingUrl!=None:
-                url = landingUrl
+            # first try if the crawler can generate the landing url from the metaData
+            url = crawler.makeLandingUrl(artMeta)
+            if url==None:
+                if landingUrl!=None:
+                    url = landingUrl
+                else:
+                    # otherwise find the landing URL ourselves
+                    url = getLandingUrlSearchEngine(artMeta, config)
+
+            # now run the crawler on the landing URL
+            logging.info('Crawling base URL %r' % url)
+            paperData = None
+            crawlInfo["attempted"].append(crawler.name)
+
+            paperData = crawler.crawl(url)
+
+            if paperData is None:
+                raise pubGetError('No paperData found for this url %s %s' % (artMeta["title"], landingUrl), 'noPaperData')
+
+            # make sure that the PDF data is really in PDF format
+            if paperData is not None and "main.pdf" in paperData:
+                mustBePdf(paperData["main.pdf"], artMeta)
+
+            if doc_type == 'pdf':
+                if 'main.pdf' not in paperData:
+                    raise pubGetError('No pdf found for this url %s %s' % (artMeta["title"], landingUrl), 'noPdf')
+                elif not return_info:
+                    return paperData['main.pdf']['data']
+                else:
+                    crawlInfo["succeeded"] = crawler.name
+                    return paperData['main.pdf']['data'], crawlInfo
+
+            elif not return_info:
+                print("A")
+                return paperData['main.html']['data']
             else:
-                # otherwise find the landing URL ourselves
-                url = getLandingUrlSearchEngine(artMeta, config)
+                print("B")
+                crawlInfo["succeeded"] = crawler.name
+                return paperData['main.pdf']['data'], crawlInfo
 
-        # now run the crawler on the landing URL
-        logging.info('Crawling base URL %r' % url)
-        paperData = None
-
-        paperData = crawler.crawl(url)
-
-        if paperData is None:
-            return None
-
-        # make sure that the PDF data is really in PDF format
-        if paperData is not None and "main.pdf" in paperData:
-            mustBePdf(paperData["main.pdf"], artMeta)
-
-        if doc_type == 'pdf':
-            if 'main.pdf' not in paperData:
-                raise pubGetError('No pdf found for this url %s %s' % (artMeta["title"], landingUrl), 'noPdf')
-            else:
-                return paperData['main.pdf']['data']
-        else:
-            return paperData['main.html']['data']
-
-    logging.warn("No crawler was able to handle the paper, giving up")
-    if lastException is None:
+        except Exception as e:
+            print("Caught exception:", e)
+            crawlInfo["exceptions"].append(str(e))
+            
+    print("No crawler was able to handle the paper, giving up", flush=True)
+    if return_info:
+        return None, crawlInfo
+    if not crawlInfo["exceptions"] is None:
         raise pubGetError('No crawler was able to handle the paper', 'noCrawlerSuccess', landingUrl)
     else:
-        raise lastException
+        raise crawlInfo["exceptions"][-1]
     return
 
 if __name__=="__main__":
